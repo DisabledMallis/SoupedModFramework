@@ -29,16 +29,16 @@ jobs:
         node-version: ${{ matrix.node-version }}
         
     - name: Install Dependencies
-      run: cd pages && npm install
+      run: cd smf-pages && npm install
     
     - name: Build Pages
-      run: cd pages && npm run build
+      run: cd smf-pages && npm run build
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./pages/dist
+        publish_dir: ./smf-pages/dist
         cname: souped.dev
         enable_jekyll: false
         user_name: 'github-actions[bot]'
