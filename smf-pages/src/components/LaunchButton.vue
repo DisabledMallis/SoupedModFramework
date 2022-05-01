@@ -3,6 +3,7 @@
         methods: {
             launch: () => {
                 console.log("Preparing for launch");
+				// eslint-disable-next-line
                 nativeLaunch();
             }
         }
@@ -15,17 +16,17 @@
 
 <style scoped>
     button {
-        background-color: var(--vt-c-black);
+        background-color: #131313;
         border: solid;
         border-width: 1px;
         border-radius: 5px;
         font-size: 2em;
-        color: var(--vt-c-text-dark-1);
+        color: #FFFFFF;
         cursor: pointer;
         transition: all .5s;
     }
     button:hover {
-        background-color: var(--vt-c-text-dark-1);
-        color: var(--vt-c-black);
+        background-color: #FFFFFF;
+        color: #131313;
     }
 </style>

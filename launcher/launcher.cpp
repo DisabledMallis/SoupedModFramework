@@ -30,7 +30,7 @@ Launcher::Launcher() {
     /// Load a page into our overlay's View
     ///
 #ifdef _DEBUG
-    overlay_->view()->LoadURL("http://localhost:3000/launcher.html");
+    overlay_->view()->LoadURL("http://localhost:8080/launcher.html");
 #else
     overlay_->view()->LoadURL("http://souped.dev/launcher.html");
 #endif

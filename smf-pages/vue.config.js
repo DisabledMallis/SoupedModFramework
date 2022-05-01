@@ -1,16 +1,15 @@
-// vue.config.js
 const { defineConfig } = require('@vue/cli-service')
-
 module.exports = defineConfig({
+	transpileDependencies: true,
 	pages: {
 		index: {
 			entry: 'src/main.js',
-			template: 'index.html',
+			template: 'public/index.html',
 			filename: 'index.html'
 		},
 		launcher: {
-			entry: 'src/main.js',
-			template: 'launcher.html',
+			entry: 'src/launcher.js',
+			template: 'public/index.html',
 			filename: 'launcher.html'
 		}
 	}
