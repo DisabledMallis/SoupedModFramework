@@ -6,6 +6,8 @@ set(APP_NAME Launcher)
 include(cmake/App.cmake)
 
 set(SOURCES "main.cpp"
-			"launcher.cpp")
+			"launcher.cpp"
+			"interop/nativeLaunch.cpp"
+			)
 
 add_app("${SOURCES}")
