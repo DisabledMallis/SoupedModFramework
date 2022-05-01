@@ -10,8 +10,8 @@ jobs:
       with:
         node-version: '18.x'
     - name: Install Dependencies
-      working-directory: /docs
+      working-directory: ./docs
       run: npm install
     - name: Build
-      working-directory: /docs
+      working-directory: ./docs
       run: npm run build
