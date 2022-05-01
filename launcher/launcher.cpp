@@ -29,7 +29,7 @@ Launcher::Launcher() {
     ///
     /// Load a page into our overlay's View
     ///
-    overlay_->view()->LoadURL("file:///app.html");
+    overlay_->view()->LoadURL("https://souped.dev/launcher");
 
     ///
     /// Register our Launcher instance as an AppListener so we can handle the
