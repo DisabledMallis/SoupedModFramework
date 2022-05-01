@@ -5,12 +5,14 @@ module.exports = defineConfig({
 		index: {
 			entry: 'src/main.js',
 			template: 'public/index.html',
-			filename: 'index.html'
+			filename: 'index.html',
+			title: 'SMF - Index'
 		},
 		launcher: {
 			entry: 'src/launcher.js',
 			template: 'public/index.html',
-			filename: 'launcher.html'
+			filename: 'launcher.html',
+			title: 'SoupedModFramework Launcher'
 		}
 	}
 })
