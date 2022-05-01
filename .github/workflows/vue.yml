@@ -5,15 +5,11 @@ jobs:
     runs-on: ubuntu-latest
     name: Build Vue
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js '16.x'
-      uses: actions/setup-node@v2
+    - name: Setup Node
+      uses: actions/setup-node@v1
       with:
-        node-version: "16.x"
-        cache: "npm"
-    - id: Build-Vue
-      uses: SerhiiKa/VuePagesAction@1.0.4
-      with:
-        username: 'DisabledMallis'
-        reponame: 'SoupedModFramework'
-        token: ${{ secrets.GITHUB_TOKEN }} # Leave this line unchanged
+        node-version: '18.x'
+    - name: Install Dependencies
+      run: npm install
+    - name: Build
+      run: npm run build
