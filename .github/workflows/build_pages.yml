@@ -29,7 +29,13 @@ jobs:
         node-version: ${{ matrix.node-version }}
         
     - name: Install Dependencies
-      run: cd docs && npm install
+      run: cd pages && npm install
     
     - name: Build Pages
-      run: cd docs && npm run build
+      run: cd pages && npm run build
+
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./pages/dist
