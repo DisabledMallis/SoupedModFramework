@@ -1,17 +1,30 @@
 <script>
-    export default {
-        methods: {
-            launch: () => {
-                console.log("Preparing for launch");
-				// eslint-disable-next-line
-                nativeLaunch();
+import LoadingSpinner from './LoadingSpinner.vue'
+
+export default {
+    data() {
+        return {
+            isLoading: false,
+        }
+    },
+    methods: {
+        launch() {
+            console.log("Preparing for launch");
+            // eslint-disable-next-line
+            if(nativeLaunch()) {
+                this.isLoading = true;
             }
         }
+    },
+    components: {
+        LoadingSpinner
     }
+}
 </script>
 
 <template>
-    <button @click="launch">Launch</button>
+    <LoadingSpinner v-if="isLoading"/>
+    <button v-else @click="launch">Launch</button>
 </template>
 
 <style scoped>

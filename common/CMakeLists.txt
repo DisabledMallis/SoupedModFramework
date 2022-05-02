@@ -1,4 +1,4 @@
-add_library(Common SHARED
+add_library(Common STATIC
 	"main.cpp"
 )
 

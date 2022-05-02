@@ -104,5 +104,5 @@ JSValueRef NativeLaunch(JSContextRef ctx, JSObjectRef function, JSObjectRef this
     });
     launchThread.detach();
 
-	return 0;
+	return JSValueMakeBoolean(ctx, true);
 }
