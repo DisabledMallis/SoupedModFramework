@@ -8,6 +8,7 @@
 #include <thread>
 #include <fstream>
 #include <logger.h>
+#include <steam.h>
 
 std::thread launchThread;
 
@@ -57,7 +58,14 @@ bool procHasModule(const PROCESS_INFORMATION& processInfo, std::filesystem::path
 }
 
 JSValueRef NativeLaunch(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception) {
-	//Launch procedure
+    std::string userId = Steam::GetUserID();
+    if (userId == "0") {
+        Logger::print<Logger::WARNING>("No steam account is logged in!");
+        MessageBoxA(0, "Please login to Steam before launching!", "Launcher Error", MB_OK);
+        return JSValueMakeBoolean(ctx, false);
+    }
+    
+    //Launch procedure
     launchThread = std::thread([]() {
 
         //1. Copy proxy dll into game dir
