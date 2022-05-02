@@ -1,6 +1,8 @@
-add_library(Loader SHARED main.cpp)
+add_library(Loader SHARED main.cpp "hookManager.h" "hookManager.cpp")
 
-target_link_libraries(Loader PRIVATE Common fmt)
+#set_target_properties(Loader PROPERTIES CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+target_link_libraries(Loader PRIVATE Common fmt PolyHook_2)
 
 # Add target to build dir
 add_custom_command(

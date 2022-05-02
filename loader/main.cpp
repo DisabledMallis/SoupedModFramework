@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <logger.h>
+#include "hookManager.h"
 
 int initialize() {
 	AllocConsole();
@@ -10,6 +11,14 @@ int initialize() {
 	freopen_s(&fDummy, "CONOUT$", "w", stdout);
 
 	Logger::print("Welcome to SoupedModFramework");
+
+	Logger::print("Creating hooks...");
+	if (HookManager::ApplyHooks()) {
+		Logger::print("Successfully applied all hooks");
+	}
+	else {
+		Logger::print<Logger::FAILURE>("Failed to apply hooks");
+	}
 
 	return 0;
 }

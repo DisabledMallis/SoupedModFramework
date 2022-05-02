@@ -14,7 +14,7 @@
 #define LOGGER_PADDING std::string(LOGGER_PREFIX_SIZE, ' ')
 
 namespace Logger {
-	enum class LogLevel {
+	enum LogLevel {
 #ifdef _WIN32
 		DEFAULT = FOREGROUND_INTENSITY | FOREGROUND_GREEN | FOREGROUND_BLUE,
 		SUCCESS = FOREGROUND_INTENSITY | FOREGROUND_GREEN,
