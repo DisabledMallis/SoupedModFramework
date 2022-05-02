@@ -6,6 +6,6 @@ target_link_libraries(wininet PRIVATE fmt)
 add_custom_command(
 	TARGET wininet POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy
-		${CMAKE_BINARY_DIR}/proxy/${CMAKE_CONFIGURATION_TYPES}/wininet.dll
+		${CMAKE_BINARY_DIR}/proxy/wininet.dll
 		${FINAL_DIR}/proxies/wininet.dll
 )

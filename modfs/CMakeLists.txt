@@ -10,6 +10,6 @@ target_sources(ModFS PRIVATE
 add_custom_command(
 	TARGET ModFS POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy
-		${CMAKE_BINARY_DIR}/modfs/${CMAKE_CONFIGURATION_TYPES}/ModFS.dll
+		${CMAKE_BINARY_DIR}/modfs/ModFS.dll
 		${FINAL_DIR}/ModFS.dll
 )

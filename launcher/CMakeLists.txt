@@ -18,6 +18,6 @@ target_link_libraries(Launcher PRIVATE Common fmt)
 add_custom_command(
 	TARGET Launcher POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy
-		${CMAKE_BINARY_DIR}/launcher/${CMAKE_CONFIGURATION_TYPES}/Launcher.exe
+		${CMAKE_BINARY_DIR}/launcher/Launcher.exe
 		${FINAL_DIR}/Launcher.exe
 )

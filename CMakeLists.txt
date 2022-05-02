@@ -20,7 +20,7 @@ if(NOT fmt_POPULATED)
 endif()
 
 # Final output dir for compile files
-set(FINAL_DIR "${CMAKE_CURRENT_LIST_DIR}/build/${CMAKE_CONFIGURATION_TYPES}/")
+set(FINAL_DIR "${CMAKE_CURRENT_LIST_DIR}/build/${CMAKE_BUILD_TYPE}")
 
 # Add SMF sources
 add_subdirectory(b2smf-js)

@@ -9,6 +9,6 @@ target_link_libraries(Common PRIVATE fmt)
 add_custom_command(
 	TARGET Common POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy
-		${CMAKE_BINARY_DIR}/common/${CMAKE_CONFIGURATION_TYPES}/Common.dll
+		${CMAKE_BINARY_DIR}/common/Common.dll
 		${FINAL_DIR}/Common.dll
 )
