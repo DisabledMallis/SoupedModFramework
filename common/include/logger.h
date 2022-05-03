@@ -29,7 +29,7 @@ namespace Logger {
 	};
 
 	template <LogLevel level, typename... T>
-	void print(fmt::string_view fomt, T&&... args)
+	void Print(fmt::string_view fomt, T&&... args)
 	{
 		fmt::print(LOGGER_LBORDER);
 #ifdef _WIN32
@@ -46,7 +46,7 @@ namespace Logger {
 	}
 
 	template <typename... T>
-	void print(fmt::string_view fomt, T&&... args) {
-		print<LogLevel::DEFAULT>(fomt, args...);
+	void Print(fmt::string_view fomt, T&&... args) {
+		Print<LogLevel::DEFAULT>(fomt, args...);
 	}
 }

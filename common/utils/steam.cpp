@@ -8,7 +8,7 @@ std::filesystem::path Steam::GetSteamDir()
 
 std::filesystem::path Steam::GetUserdataDir()
 {
-	return GetSteamDir().append("/userdata");
+	return GetSteamDir().append("userdata");
 }
 
 std::string Steam::GetUserID()
