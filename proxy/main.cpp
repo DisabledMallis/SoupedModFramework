@@ -49,6 +49,7 @@ auto initialize(HMODULE proxyDll) -> int {
 	winINet = LoadLibraryA(wininetPath.c_str());
 	if (winINet == NULL) {
 		fmt::print("Failed to load original wininet\n");
+		MessageBoxA(0, "Failed to find wininet.dll in System32", "Proxy Error", MB_OK);
 		return 1;
 	}
 	else {
@@ -58,6 +59,7 @@ auto initialize(HMODULE proxyDll) -> int {
 	InternetGetConnectedState_orig = (size_t(__stdcall*)(size_t, int))GetProcAddress(winINet, "InternetGetConnectedState");
 	if (InternetGetConnectedState_orig == NULL) {
 		fmt::print("Failed to find InternetGetConnectedState\n");
+		MessageBoxA(0, "Failed to find InternetGetConnectedState", "Proxy Error", MB_OK);
 		return 1;
 	}
 

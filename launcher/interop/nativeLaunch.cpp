@@ -73,14 +73,15 @@ JSValueRef NativeLaunch(JSContextRef ctx, JSObjectRef function, JSObjectRef this
             fmt::print(fmt::fg(fmt::color::red), "Couldn't find proxy dll, is SMF installed properly?");
             MessageBoxA(0, "Couldn't find proxy dll", "Launcher Error", MB_OK);
         }
-        if (!std::filesystem::exists("./wininet.dll")) {
-            try {
-                std::filesystem::copy_file("./proxies/wininet.dll", "./wininet.dll");
-            }
-            catch (std::filesystem::filesystem_error err) {
-                fmt::print(fmt::fg(fmt::color::red), "Error copying proxy: {}", err.what());
-                MessageBoxA(0, err.what(), "Launcher Error", MB_OK);
-            }
+        if (std::filesystem::exists("./wininet.dll")) {
+            std::filesystem::remove("./wininet.dll");
+        }
+        try {
+            std::filesystem::copy_file("./proxies/wininet.dll", "./wininet.dll");
+        }
+        catch (std::filesystem::filesystem_error err) {
+            fmt::print(fmt::fg(fmt::color::red), "Error copying proxy: {}", err.what());
+            MessageBoxA(0, err.what(), "Launcher Error", MB_OK);
         }
 
         //2. Create modded.lock file for proxy (this tells the proxy dll to load mods or not)

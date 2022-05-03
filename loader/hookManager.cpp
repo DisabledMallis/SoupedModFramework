@@ -76,9 +76,7 @@ HANDLE WINAPI hkCreateFileW(
         //Write the file contents
         WriteFile(hDumpFile, fileBuffer, dumpSize, NULL, NULL);
         //Close it
-        //CloseHandle(hDumpFile);
-        return hDumpFile;
-        CloseHandle(hFile);
+        CloseHandle(hDumpFile);
     }
 
     return hFile;
