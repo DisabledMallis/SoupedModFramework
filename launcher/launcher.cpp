@@ -14,7 +14,7 @@ Launcher::Launcher() {
     /// kWindowFlags_Resizable.
     ///
     window_ = Window::Create(app_->main_monitor(), WINDOW_WIDTH, WINDOW_HEIGHT, false, kWindowFlags_Titled | kWindowFlags_Resizable);
-
+    
     ///
     /// Create our HTML overlay-- we don't care about its initial size and
     /// position because it'll be calculated when we call OnResize() below.
@@ -59,6 +59,9 @@ Launcher::Launcher() {
     /// View's OnChangeCursor and OnChangeTitle events below.
     ///
     overlay_->view()->set_view_listener(this);
+
+    HWND hWnd = (HWND)window_->native_handle();
+    SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 }
 
 Launcher::~Launcher() {
