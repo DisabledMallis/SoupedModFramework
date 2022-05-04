@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include "hookManager.h"
 #include <polyhook2/Detour/x64Detour.hpp>
+#include <ipc.h>
 
 static PLH::x64Detour* plhwWinMain;
 static uint64_t owWinMain;
@@ -23,6 +24,14 @@ int __stdcall hkwWinMain(
 
 	Logger::Print("Hooks ready");
 	std::cin.get();
+
+	Logger::Print("Killing launcher");
+	HANDLE hPipe = IPC::OpenPipe(LAUNCH_STATUS_PIPE);
+	Logger::Print("Pipe open");
+	IPC::WriteMessage(hPipe, "exit");
+	Logger::Print("Message sent");
+	IPC::ClosePipe(hPipe);
+	Logger::Print("Launcher killed & pipe closed");
 
 	return PLH::FnCast(owWinMain, hkwWinMain)(
 		hInstance,
