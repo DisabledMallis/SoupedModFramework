@@ -16,6 +16,16 @@ int hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32
 	std::string fileName = bundleData->GetName().cpp_str();
 	int ret = PLH::FnCast(oDecompressFile, hkDecompressFile)(pZipIterator, lpReadBuffer, bufferSize);
 	Logger::Print("Decompressed file {} from {}", fileName, bundlePath);
+
+	std::filesystem::path cd = std::filesystem::current_path();
+	std::filesystem::path dumpDir = cd / "dump";
+	std::filesystem::path dumpFile = dumpDir / fileName;
+	std::filesystem::create_directories(dumpFile.parent_path());
+	std::ofstream dumpStream;
+	dumpStream.open(dumpFile.string(), std::ios::trunc | std::ios::binary);
+	dumpStream.write(lpReadBuffer, bufferSize);
+	dumpStream.close();
+
 	return ret;
 }
 
