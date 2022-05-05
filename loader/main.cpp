@@ -29,13 +29,6 @@ int __stdcall hkwWinMain(
 
 	Logger::Print("Hooks ready");
 
-	Soup::String* smallTestString = new Soup::String("Short");
-	Logger::Print("Constructed smallTestString at {}", (void*)smallTestString);
-	Soup::String* largeTestString = new Soup::String("Super very long string that requires an allocated buffer");
-	Logger::Print("Constructed smallTestString at {}", (void*)largeTestString);
-
-	std::cin.get();
-
 	Logger::Print("Killing launcher");
 	HANDLE hPipe = IPC::OpenPipe(LAUNCH_STATUS_PIPE);
 	Logger::Print("Pipe open");

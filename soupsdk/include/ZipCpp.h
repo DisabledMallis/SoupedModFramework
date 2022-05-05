@@ -11,8 +11,6 @@ namespace Soup {
 		static constexpr const char* SIG_ZIPCPP_OPENFILE = "48 83 ?? ?? ?? 89 ?? ?? ?? 45 33 ?? 33";
 	}
 	namespace ZipCpp {
-		bool CreateHooks();
-
 		void GetFileInfo(Soup::CFile* pCFile, void* param_2, void* param_3, int param_4, void* param_5, int param_6, void* param_7, int param_8);
 		int DecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32_t bufferSize);
 	};
