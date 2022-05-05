@@ -23,30 +23,27 @@ JSValueRef NativeLaunch(JSContextRef ctx, JSObjectRef function, JSObjectRef this
     
     //Launch procedure
     launchThread = std::thread([]() {
-
-        //1. Copy proxy dll into game dir
+        //1. Move proxy dll into game dir
         if (!std::filesystem::exists("./proxies/wininet.dll")) {
             Logger::Print<Logger::FAILURE>("Couldn't find proxy dll, is SMF installed properly?");
             MessageBoxA(0, "Couldn't find proxy dll", "Launcher Error", MB_OK);
+            return;
         }
         if (std::filesystem::exists("./wininet.dll")) {
-            std::filesystem::remove("./wininet.dll");
+            if (!std::filesystem::remove("./wininet.dll")) {
+                Logger::Print<Logger::WARNING>("Couldn't remove pre-existing wininet.dll");
+            }
         }
         try {
-            std::filesystem::copy_file("./proxies/wininet.dll", "./wininet.dll");
+            std::filesystem::rename("./proxies/wininet.dll", "wininet.dll");
         }
-        catch (std::filesystem::filesystem_error err) {
-            Logger::Print<Logger::FAILURE>("Error copying proxy: {}", err.what());
+        catch (std::filesystem::filesystem_error& err) {
+            Logger::Print<Logger::FAILURE>("Error moving proxy: {}", err.what());
             MessageBoxA(0, err.what(), "Launcher Error", MB_OK);
+            return;
         }
 
-        //2. Create modded.lock file for proxy (this tells the proxy dll to load mods or not)
-        std::fstream fileStream;
-        fileStream.open("modded.lock", std::ios::out);
-        fileStream << "Modded client";
-        fileStream.close();
-
-        //3. Launch exe
+        //2. Launch exe
         STARTUPINFO info = { sizeof(info) };
         PROCESS_INFORMATION processInfo;
         if (!CreateProcessA("btdb2_game.exe", 0, 0, 0, FALSE, 0, 0, 0, &info, &processInfo)) {
@@ -54,13 +51,10 @@ JSValueRef NativeLaunch(JSContextRef ctx, JSObjectRef function, JSObjectRef this
             MessageBoxA(0, "SoupedModFramework cannot find BTDB2, please ensure it is in the game's directory!", "SMF Error", MB_OK);
         }
 
-        //4. Wait! The game will kill this process
+        //3. Wait! The game will kill this process
         try {
-            Logger::Print("FUCK");
             std::string sMsg(IPC::SpawnAndWaitForPipe(LAUNCH_STATUS_PIPE));
-            Logger::Print("YOU");
             if (sMsg == "exit") {
-                Logger::Print("okbye");
                 exit(0);
             }
         }

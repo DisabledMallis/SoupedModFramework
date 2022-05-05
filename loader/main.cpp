@@ -13,6 +13,10 @@ int __stdcall hkwWinMain(
 	LPWSTR lpCmdLine,
 	void* nShowCmd
 ) {
+	//Move proxy dll back into 'proxies' folder
+	std::filesystem::path cd = std::filesystem::current_path();
+	std::filesystem::rename("./wininet.dll", "./proxies/wininet.dll");
+
 	/*Game's main, do hooking/patching/etc here*/
 	Logger::Print("Creating hooks...");
 	if (HookManager::ApplyHooks()) {

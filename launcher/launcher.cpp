@@ -29,12 +29,14 @@ Launcher::Launcher() {
     ///
     /// Load a page into our overlay's View
     ///
-    //overlay_->view()->LoadURL("http://souped.dev/launcher.html");
+    overlay_->view()->LoadURL("http://souped.dev/launcher.html");
+/*
 #ifdef _DEBUG
     overlay_->view()->LoadURL("http://localhost:8080/launcher");
 #else
     overlay_->view()->LoadURL("http://souped.dev/launcher.html");
 #endif
+*/
 
     ///
     /// Register our Launcher instance as an AppListener so we can handle the

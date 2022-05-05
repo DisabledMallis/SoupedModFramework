@@ -28,6 +28,11 @@ extern "C" __declspec(dllexport) size_t __stdcall InternetGetConnectedState(size
 	int result = InternetGetConnectedState_orig(lpdwFlags, dwReserved);
 	return result;
 }
+extern "C" __declspec(dllexport) void __stdcall RestoreSelf() {
+	//Move proxy dll back into 'proxies' folder
+	std::filesystem::path cd = std::filesystem::current_path();
+	std::filesystem::rename("./wininet.dll", "./proxies/wininet.dll");
+}
 
 auto initialize(HMODULE proxyDll) -> int {
 	//Find the original wininet.dll
@@ -65,20 +70,16 @@ auto initialize(HMODULE proxyDll) -> int {
 
 	//Load tweaker DLLs
 	try {
-		if (std::filesystem::exists("modded.lock")) {
-			std::string modsDir = "loaders/";
-			for (const auto& tweaker : std::filesystem::directory_iterator(modsDir)) {
-				LoadLibraryW(tweaker.path().c_str());
-				fmt::print("Loaded tweaker '{}'\n", tweaker.path().filename().string());
-			}
+		std::string modsDir = "loaders/";
+		for (const auto& tweaker : std::filesystem::directory_iterator(modsDir)) {
+			LoadLibraryW(tweaker.path().c_str());
+			fmt::print("Loaded tweaker '{}'\n", tweaker.path().filename().string());
 		}
 	}
 	catch (std::exception ex) {
 		MessageBoxA(nullptr, ex.what(), "Error (Missing 'loaders' folder?)", MB_OK);
 		exit(1);
 	}
-
-	fmt::print("Proxy work complete\n");
 
 	return 0;
 }
@@ -93,7 +94,7 @@ extern "C" __declspec(dllexport) bool __stdcall DllMain(
 	switch (fdwReason)
 	{
 	case DLL_PROCESS_ATTACH:
-		CreateThread(0, 0, (LPTHREAD_START_ROUTINE)initialize, hinstDLL, 0, 0);
+		initialize(hinstDLL);
 		break;
 	}
 	return TRUE;  // Successful DLL_PROCESS_ATTACH.

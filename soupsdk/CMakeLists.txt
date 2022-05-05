@@ -1,8 +1,8 @@
-add_library(SoupSDK SHARED main.cpp)
+add_library(SoupSDK SHARED)
 
 add_subdirectory(src)
 
-target_link_libraries(SoupSDK PRIVATE Common)
+target_link_libraries(SoupSDK PRIVATE Common PolyHook_2 fmt)
 
 # Add target to build dir
 add_custom_command(
