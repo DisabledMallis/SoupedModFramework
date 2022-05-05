@@ -13,7 +13,7 @@ namespace Soup {
 	namespace ZipCpp {
 		bool CreateHooks();
 
-		void GetFileInfo(CCompressedFile* pCCompressedFile, void* param_2, void* param_3, int param_4, void* param_5, int param_6, void* param_7, int param_8);
-		int DecompressFile(CCompressedFile* pCCompressedFile, char* lpReadBuffer, uint32_t bufferSize);
+		void GetFileInfo(Soup::CFile* pCFile, void* param_2, void* param_3, int param_4, void* param_5, int param_6, void* param_7, int param_8);
+		int DecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32_t bufferSize);
 	};
 };

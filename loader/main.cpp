@@ -4,6 +4,7 @@
 #include "hookManager.h"
 #include <polyhook2/Detour/x64Detour.hpp>
 #include <ipc.h>
+#include <SoupSTL.h>
 
 static PLH::x64Detour* plhwWinMain;
 static uint64_t owWinMain;
@@ -27,6 +28,12 @@ int __stdcall hkwWinMain(
 	}
 
 	Logger::Print("Hooks ready");
+
+	Soup::String* smallTestString = new Soup::String("Short");
+	Logger::Print("Constructed smallTestString at {}", (void*)smallTestString);
+	Soup::String* largeTestString = new Soup::String("Super very long string that requires an allocated buffer");
+	Logger::Print("Constructed smallTestString at {}", (void*)largeTestString);
+
 	std::cin.get();
 
 	Logger::Print("Killing launcher");

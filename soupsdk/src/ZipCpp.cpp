@@ -7,10 +7,15 @@
 
 static PLH::x64Detour* plhDecompressFile;
 static uint64_t oDecompressFile = Memory::FindSig(Soup::Signatures::SIG_ZIPCPP_DECOMPRESSFILE);
-int hkDecompressFile(Soup::CCompressedFile* pCCompressedFile, char* lpReadBuffer, uint32_t bufferSize) {
-	std::string fileName = pCCompressedFile->pbFilePath->cpp_str();
-	int ret = PLH::FnCast(oDecompressFile, hkDecompressFile)(pCCompressedFile, lpReadBuffer, bufferSize);
-	Logger::Print("fileName: {}", fileName);
+int hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32_t bufferSize) {
+	//Get the bundle (.jet) file path
+	std::string bundlePath = pZipIterator->psArchivePath->cpp_str();
+	//Get the bundle information
+	Soup::ZipEntry* bundleData = pZipIterator->pZipEntry;
+	//Get the entry & path for the current file
+	std::string fileName = bundleData->GetName().cpp_str();
+	int ret = PLH::FnCast(oDecompressFile, hkDecompressFile)(pZipIterator, lpReadBuffer, bufferSize);
+	Logger::Print("Decompressed file {} from {}", fileName, bundlePath);
 	return ret;
 }
 
@@ -23,10 +28,10 @@ bool Soup::ZipCpp::CreateHooks() {
 	return true;
 }
 
-void Soup::ZipCpp::GetFileInfo(CCompressedFile* pCCompressedFile, void* param_2, void* param_3, int param_4, void* param_5, int param_6, void* param_7, int param_8) {
+void Soup::ZipCpp::GetFileInfo(CFile* pCFile, void* param_2, void* param_3, int param_4, void* param_5, int param_6, void* param_7, int param_8) {
 
 }
 
-int Soup::ZipCpp::DecompressFile(CCompressedFile* pCCompressedFile, char* lpReadBuffer, uint32_t bufferSize) {
-	return PLH::FnCast(oDecompressFile, DecompressFile)(pCCompressedFile, lpReadBuffer, bufferSize);
+int Soup::ZipCpp::DecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32_t bufferSize) {
+	return PLH::FnCast(oDecompressFile, DecompressFile)(pZipIterator, lpReadBuffer, bufferSize);
 }
