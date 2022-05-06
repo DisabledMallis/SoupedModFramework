@@ -47,18 +47,19 @@ set(FINAL_DIR "${CMAKE_CURRENT_LIST_DIR}/build/${CMAKE_BUILD_TYPE}")
 
 # Include SMF sources globally
 include_directories("${CMAKE_CURRENT_LIST_DIR}/common/include/")
+include_directories("${CMAKE_CURRENT_LIST_DIR}/smfapi/include/")
 include_directories("${CMAKE_CURRENT_LIST_DIR}/soupsdk/include/")
 
 # Export all symbols (ensures .lib files are created)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 # Add SMF sources
-add_subdirectory(b2smf-js)
 add_subdirectory(common)
 add_subdirectory(launcher)
 add_subdirectory(loader)
 add_subdirectory(modfs)
 add_subdirectory(proxy)
+add_subdirectory(smfapi)
 add_subdirectory(soupsdk)
 
 # Create release ready folders
