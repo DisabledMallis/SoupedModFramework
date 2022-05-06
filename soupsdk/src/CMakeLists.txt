@@ -1,3 +1,3 @@
 target_sources(SoupSDK PRIVATE
-	"ZipCpp.cpp"
+	"Bin2.cpp"
 )

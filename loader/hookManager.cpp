@@ -7,6 +7,7 @@
 #include <polyhook2/Detour/x64Detour.hpp>
 #include <steam.h>
 #include <ZipCpp.h>
+#include <Bin2.h>
 
 static PLH::x64Detour* plhDecompressFile;
 static uint64_t oDecompressFile = Memory::FindSig(Soup::Signatures::SIG_ZIPCPP_DECOMPRESSFILE);
@@ -19,14 +20,34 @@ int hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32
 	std::string fileName = bundleData->GetName().cpp_str();
 	int ret = PLH::FnCast(oDecompressFile, hkDecompressFile)(pZipIterator, lpReadBuffer, bufferSize);
 
+	std::string sDumpData = std::string(lpReadBuffer, bufferSize);
+	uint8_t* decryptBuffer = (uint8_t*)_malloca(bufferSize);
+	if (!decryptBuffer) {
+		Logger::Print<Logger::WARNING>("Failed to dump file! Couldn't allocate decryptBuffer");
+		return ret;
+	}
+	memcpy(decryptBuffer, lpReadBuffer, bufferSize);
+	char file_header[] = "%BIN_2.0";
+	if (bufferSize < 8 || memcmp(file_header, decryptBuffer, sizeof(file_header) - 1) != 0) {
+		//File isn't encrypted
+	} 
+	else {
+		Soup::Bin2::Key key;
+		Soup::Bin2::DeriveKey(&key, bufferSize);
+		Soup::Bin2::ExecuteCrypto(&key, decryptBuffer, bufferSize);
+		sDumpData = std::string((char*)decryptBuffer, bufferSize);
+		Logger::Print("Decrypted {}", fileName);
+	}
+
 	std::filesystem::path cd = std::filesystem::current_path();
 	std::filesystem::path dumpDir = cd / "dump";
 	std::filesystem::path dumpFile = dumpDir / fileName;
 	std::filesystem::create_directories(dumpFile.parent_path());
 	std::ofstream dumpStream;
 	dumpStream.open(dumpFile.string(), std::ios::trunc | std::ios::binary);
-	dumpStream.write(lpReadBuffer, bufferSize);
+	dumpStream << sDumpData;
 	dumpStream.close();
+	Logger::Print("Dumped {}", fileName);
 
 	return ret;
 }
