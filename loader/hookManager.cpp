@@ -35,7 +35,7 @@ int hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32
 		Soup::Bin2::Key key;
 		Soup::Bin2::DeriveKey(&key, bufferSize);
 		Soup::Bin2::ExecuteCrypto(&key, decryptBuffer, bufferSize);
-		sDumpData = std::string((char*)decryptBuffer, bufferSize);
+		sDumpData = std::string((char*)decryptBuffer, bufferSize - 8); //8 bytes are removed because of checksums or smth
 		Logger::Print("Decrypted {}", fileName);
 	}
 
