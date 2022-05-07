@@ -1,6 +1,11 @@
-add_library(Loader SHARED main.cpp "hookManager.h" "hookManager.cpp")
+add_library(Loader SHARED)
 
-#set_target_properties(Loader PROPERTIES CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+target_sources(Loader PRIVATE
+	"main.cpp"
+	"hookManager.cpp"
+ "patcher/patchers.h" "patcher/patchers.cpp")
+
+add_subdirectory(dumper)
 
 target_link_libraries(Loader PRIVATE Common fmt PolyHook_2 SoupSDK)
 

@@ -43,6 +43,9 @@ namespace Soup {
 			if (len >= _BUF_SIZE) {
 				size_t allocSize = (sizeof(T) * len) + 1; //Add a byte for the null terminator
 				T* boxPtr = (T*)malloc(allocSize);
+				if (!boxPtr) {
+					throw std::exception("Failed to allocate ptr for string buffer");
+				}
 				memcpy(boxPtr, ptr, len);
 				this->box.ptr = boxPtr;
 				this->res = allocSize;

@@ -7,6 +7,9 @@
 #include <logger.h>
 
 namespace Soup {
+	namespace Signatures {
+		static constexpr const char* SIG_BIN2_DECRYPTBYTES = "?? 89 ?? ?? ?? ?? 89 ?? ?? ?? ?? 89 ?? ?? ?? 55 41 ?? 41 ?? 48 8B ?? 48 83 ?? ?? 48 8B ?? ?? ?? ?? ?? 48 33 ?? ?? 89 ?? ?? 48 8B ?? 4C";
+	};
 	namespace Bin2 {
 
 		enum DecryptionSource {
@@ -27,7 +30,7 @@ namespace Soup {
 		template<DecryptionSource source, size_t _size>
 		void DecryptBytes(uint8_t(&data)[_size]) {
 			DecryptBytes<source>(data, _size);
-		}
+		};
 		template<DecryptionSource source>
 		void DecryptBytes(uint8_t* data, size_t _size) {
 			if (source == INTERNAL) {
@@ -37,7 +40,7 @@ namespace Soup {
 				} binData = { 0, 0 };
 				binData.data = data;
 				binData.end = (uint8_t*)(data + _size);
-				static uint64_t pDecryptFunc = Memory::FindSig("?? 89 ?? ?? ?? ?? 89 ?? ?? ?? ?? 89 ?? ?? ?? 55 41 ?? 41 ?? 48 8B ?? 48 83 ?? ?? 48 8B ?? ?? ?? ?? ?? 48 33 ?? ?? 89 ?? ?? 48 8B ?? 4C");
+				static uint64_t pDecryptFunc = Memory::FindSig(Signatures::SIG_BIN2_DECRYPTBYTES);
 				if (!pDecryptFunc) {
 					Logger::Print<Logger::FAILURE>("Couldn't find the Bin2 decryption function! Try using the re-implementation");
 				}
@@ -48,6 +51,6 @@ namespace Soup {
 				DeriveKey(&key, _size);
 				ExecuteCrypto(&key, data, _size);
 			}
-		}
+		};
 	};
 };

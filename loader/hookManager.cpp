@@ -1,13 +1,19 @@
 #include "hookManager.h"
+
 #include <logger.h>
 #include <memory.h>
-
-#include <Windows.h>
-
-#include <polyhook2/Detour/x64Detour.hpp>
 #include <steam.h>
 #include <ZipCpp.h>
 #include <Bin2.h>
+#include "dumper/dumper.h"
+#include "patcher/patchers.h"
+
+#include <Windows.h>
+#include <stack>
+#include <polyhook2/Detour/x64Detour.hpp>
+
+
+std::stack<std::string> patchworkStack;
 
 static PLH::x64Detour* plhDecompressFile;
 static uint64_t oDecompressFile = Memory::FindSig(Soup::Signatures::SIG_ZIPCPP_DECOMPRESSFILE);
@@ -19,35 +25,44 @@ int hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32
 	//Get the entry & path for the current file
 	std::string fileName = bundleData->GetName().cpp_str();
 	int ret = PLH::FnCast(oDecompressFile, hkDecompressFile)(pZipIterator, lpReadBuffer, bufferSize);
+	Logger::Print("Decompressed {}", fileName);
 
-	std::string sDumpData = std::string(lpReadBuffer, bufferSize);
-	uint8_t* decryptBuffer = (uint8_t*)_malloca(bufferSize);
-	if (!decryptBuffer) {
-		Logger::Print<Logger::WARNING>("Failed to dump file! Couldn't allocate decryptBuffer");
-		return ret;
-	}
-	memcpy(decryptBuffer, lpReadBuffer, bufferSize);
 	char file_header[] = "%BIN_2.0";
-	if (bufferSize < 8 || memcmp(file_header, decryptBuffer, sizeof(file_header) - 1) != 0) {
-		//File isn't encrypted
-	} 
-	else {
-		Soup::Bin2::DecryptBytes<Soup::Bin2::INTERNAL>(decryptBuffer, bufferSize);
-		sDumpData = std::string((char*)decryptBuffer, bufferSize - 8); //8 bytes are removed because of checksums or smth
-		Logger::Print("Decrypted {}", fileName);
+	if (bufferSize < 8 || memcmp(file_header, lpReadBuffer, sizeof(file_header) - 1) != 0)
+	{
+		//File isn't BIN2 encrypted
+		Logger::Print("{} is not BIN2 encrypted", fileName);
 	}
-
-	std::filesystem::path cd = std::filesystem::current_path();
-	std::filesystem::path dumpDir = cd / "dump";
-	std::filesystem::path dumpFile = dumpDir / bundlePath.filename() / fileName;
-	std::filesystem::create_directories(dumpFile.parent_path());
-	std::ofstream dumpStream;
-	dumpStream.open(dumpFile.string(), std::ios::trunc | std::ios::binary);
-	dumpStream << sDumpData;
-	dumpStream.close();
-	Logger::Print("Dumped {}", fileName);
+	else {
+		Dumper::DumpToDisk(fileName, bundlePath, std::string(lpReadBuffer, bufferSize));
+		patchworkStack.push(fileName);
+	}
 
 	return ret;
+}
+
+static PLH::x64Detour* plhDecryptBytes;
+static uint64_t oDecryptBytes = Memory::FindSig(Soup::Signatures::SIG_BIN2_DECRYPTBYTES);
+void hkDecryptBytes(uint8_t** bytes) {
+	PLH::FnCast(oDecryptBytes, hkDecryptBytes)(bytes);
+	//If theres nothing to patch we're done
+	if (patchworkStack.empty()) {
+		return;
+	}
+	//Get the first file in the stack
+	std::string targetFile = patchworkStack.top();
+	//Pop it off the stack when the name is stored
+	patchworkStack.pop();
+
+	//Print we are patching it
+	Logger::Print("Patching {}", targetFile);
+
+	/*Patch the file*/
+	std::string fileContent = std::string(*(char**)bytes, (size_t)(bytes[1] - bytes[0]));
+	Patchers::PatchData(fileContent);
+
+	//Print we finished patching
+	Logger::Print("Patched {}", targetFile);
 }
 
 bool HookManager::ApplyHooks()
@@ -57,5 +72,12 @@ bool HookManager::ApplyHooks()
 		Logger::Print<Logger::FAILURE>("Failed to hook ZipCpp::DecompressFile");
 		return false;
 	}
+
+	plhDecryptBytes = new PLH::x64Detour(oDecryptBytes, (uint64_t)hkDecryptBytes, &oDecryptBytes);
+	if (!plhDecryptBytes->hook()) {
+		Logger::Print<Logger::FAILURE>("Failed to hook Bin2::DecryptBytes");
+		return false;
+	}
+
     return true;
 }

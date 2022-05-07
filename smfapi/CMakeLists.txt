@@ -2,7 +2,8 @@ add_library(SMFApi SHARED)
 
 target_sources(SMFApi PRIVATE
     "main.cpp"
-    "jswrapper.cpp")
+    "jswrapper.cpp"
+)
 
 #Fetch & Install ChakraCore
 FetchContent_Declare(
@@ -19,4 +20,4 @@ endif()
 target_include_directories(SMFApi PRIVATE "${CMAKE_BINARY_DIR}/_deps/ch-src/lib/jsrt/")
 target_link_directories(SMFApi PRIVATE "${CMAKE_BINARY_DIR}/_deps/ch-src/Build/VcBuild/bin/x64_${CMAKE_BUILD_TYPE}")
 
-target_link_libraries(SMFApi PUBLIC Common PRIVATE ChakraCore)
+target_link_libraries(SMFApi PUBLIC Common Loader PRIVATE ChakraCore)
