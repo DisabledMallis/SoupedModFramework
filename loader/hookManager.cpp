@@ -32,7 +32,7 @@ int hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32
 		//File isn't encrypted
 	} 
 	else {
-		Soup::Bin2::DecryptBytes<Soup::Bin2::EXTERNAL>(decryptBuffer, bufferSize);
+		Soup::Bin2::DecryptBytes<Soup::Bin2::INTERNAL>(decryptBuffer, bufferSize);
 		sDumpData = std::string((char*)decryptBuffer, bufferSize - 8); //8 bytes are removed because of checksums or smth
 		Logger::Print("Decrypted {}", fileName);
 	}
