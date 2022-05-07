@@ -13,7 +13,7 @@ static PLH::x64Detour* plhDecompressFile;
 static uint64_t oDecompressFile = Memory::FindSig(Soup::Signatures::SIG_ZIPCPP_DECOMPRESSFILE);
 int hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32_t bufferSize) {
 	//Get the bundle (.jet) file path
-	std::string bundlePath = pZipIterator->psArchivePath->cpp_str();
+	std::filesystem::path bundlePath = pZipIterator->psArchivePath->cpp_str();
 	//Get the bundle information
 	Soup::ZipEntry* bundleData = pZipIterator->pZipEntry;
 	//Get the entry & path for the current file
@@ -32,14 +32,14 @@ int hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32
 		//File isn't encrypted
 	} 
 	else {
-		Soup::Bin2::DecryptBytes<Soup::Bin2::INTERNAL>(decryptBuffer, bufferSize);
+		Soup::Bin2::DecryptBytes<Soup::Bin2::EXTERNAL>(decryptBuffer, bufferSize);
 		sDumpData = std::string((char*)decryptBuffer, bufferSize - 8); //8 bytes are removed because of checksums or smth
 		Logger::Print("Decrypted {}", fileName);
 	}
 
 	std::filesystem::path cd = std::filesystem::current_path();
 	std::filesystem::path dumpDir = cd / "dump";
-	std::filesystem::path dumpFile = dumpDir / fileName;
+	std::filesystem::path dumpFile = dumpDir / bundlePath.filename() / fileName;
 	std::filesystem::create_directories(dumpFile.parent_path());
 	std::ofstream dumpStream;
 	dumpStream.open(dumpFile.string(), std::ios::trunc | std::ios::binary);
