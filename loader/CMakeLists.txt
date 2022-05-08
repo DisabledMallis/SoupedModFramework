@@ -3,7 +3,6 @@ add_library(Loader SHARED)
 target_sources(Loader PRIVATE
 	"hookManager.cpp"
 	"jsfuncs.cpp"
-	"jspatcher.cpp"
 	"jswrapper.cpp"
 	"main.cpp"
 )

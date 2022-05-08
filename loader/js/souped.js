@@ -17,7 +17,7 @@ function createPatcher(callback, filename) {
             var dataObj = JSON.parse(data);
             return callback(dataObj);
         }
-        return { successful: false, data: undefined };
+        return { successful: false, data: null };
     });
 }
 
@@ -25,4 +25,4 @@ function dartPatch(data) {
     console.error("Hello dart mokey!");
     return { successful: false, data: data };
 }
-createPatcher(dartPatch, "dart_monkey")
+createPatcher(dartPatch, "dart_monkey");
