@@ -1,3 +1,3 @@
-tagret_sources(Loader PRIVATE
-	"patcher.cpp"
+target_sources(Loader PRIVATE
+	"patchers.cpp"
 )

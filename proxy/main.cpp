@@ -35,6 +35,12 @@ extern "C" __declspec(dllexport) void __stdcall RestoreSelf() {
 }
 
 auto initialize(HMODULE proxyDll) -> int {
+	AllocConsole();
+	FILE* fDummy;
+	freopen_s(&fDummy, "CONIN$", "r", stdin);
+	freopen_s(&fDummy, "CONOUT$", "w", stderr);
+	freopen_s(&fDummy, "CONOUT$", "w", stdout);
+
 	//Find the original wininet.dll
 	char sys32Path[MAX_PATH];
 
@@ -55,7 +61,7 @@ auto initialize(HMODULE proxyDll) -> int {
 	if (winINet == NULL) {
 		fmt::print("Failed to load original wininet\n");
 		MessageBoxA(0, "Failed to find wininet.dll in System32", "Proxy Error", MB_OK);
-		return 1;
+		exit(1);
 	}
 	else {
 		fmt::print("Loaded original wininet\n");
@@ -65,14 +71,14 @@ auto initialize(HMODULE proxyDll) -> int {
 	if (InternetGetConnectedState_orig == NULL) {
 		fmt::print("Failed to find InternetGetConnectedState\n");
 		MessageBoxA(0, "Failed to find InternetGetConnectedState", "Proxy Error", MB_OK);
-		return 1;
+		exit(1);
 	}
 
 	//Load tweaker DLLs
 	try {
 		std::string modsDir = "loaders/";
 		for (const auto& tweaker : std::filesystem::directory_iterator(modsDir)) {
-			LoadLibraryW(tweaker.path().c_str());
+			LoadLibraryA(tweaker.path().string().c_str());
 			fmt::print("Loaded tweaker '{}'\n", tweaker.path().filename().string());
 		}
 	}

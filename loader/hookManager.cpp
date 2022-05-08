@@ -6,7 +6,7 @@
 #include <ZipCpp.h>
 #include <Bin2.h>
 #include "dumper/dumper.h"
-#include "patcher/patchers.h"
+#include <patchers.h>
 
 #include <Windows.h>
 #include <stack>
@@ -59,7 +59,7 @@ void hkDecryptBytes(uint8_t** bytes) {
 
 	/*Patch the file*/
 	std::string fileContent = std::string(*(char**)bytes, (size_t)(bytes[1] - bytes[0]));
-	Patchers::PatchData(fileContent);
+	Patchers::PatchData(targetFile, fileContent);
 
 	//Print we finished patching
 	Logger::Print("Patched {}", targetFile);
