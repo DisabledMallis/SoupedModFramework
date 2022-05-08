@@ -129,7 +129,9 @@ void JSWrapper::HandleException() {
     }
     JsValueRef exMsg = ReadProperty(exception, L"message");
     std::string cppExMsg = ToCppString(exMsg);
-    Logger::Print<Logger::FAILURE>("Javascript Error: {}, len: {}", cppExMsg, cppExMsg.size());
+    JsValueRef exStack = ReadProperty(exception, L"stack");
+    std::string cppStackStr = ToCppString(exStack);
+    Logger::Print<Logger::FAILURE>("Error: {}\nStack: {}", cppExMsg, cppStackStr);
 }
 
 JsValueRef JSWrapper::Run(std::wstring code)
