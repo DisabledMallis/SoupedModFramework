@@ -1,18 +1,18 @@
-project(Launcher C CXX)
+add_executable(Launcher
+	"main.cpp"
+	"launcher.cpp"
+	"interop/nativeLaunch.cpp"
+)
 
-set(APP_NAME Launcher)
-include(cmake/App.cmake)
+set(SDK_ROOT "${CMAKE_BINARY_DIR}/SDK/")
+set(ULTRALIGHT_INCLUDE_DIR "${SDK_ROOT}/include")
+set(ULTRALIGHT_BINARY_DIR "${SDK_ROOT}/bin")
+set(ULTRALIGHT_RESOURCES_DIR "${SDK_ROOT}/resources")
+set(ULTRALIGHT_INSPECTOR_DIR "${SDK_ROOT}/inspector")
 
-set(SOURCES "main.cpp"
-			"launcher.cpp"
-			"interop/nativeLaunch.cpp"
-			)
-
-add_app("${SOURCES}")
-
-#set_target_properties(Launcher PROPERTIES CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-
-target_link_libraries(Launcher PRIVATE Common fmt)
+target_include_directories(Launcher PRIVATE "${ULTRALIGHT_INCLUDE_DIR}")
+target_link_directories(Launcher PRIVATE "${ULTRALIGHT_LIBRARY_DIR}")
+target_link_libraries(Launcher PRIVATE Common fmt UltralightCore AppCore Ultralight WebCore)
 
 # Add target to build dir
 add_custom_command(

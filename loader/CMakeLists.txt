@@ -4,28 +4,22 @@ target_sources(Loader PRIVATE
 	"hookManager.cpp"
 	"jsfuncs.cpp"
 	"jswrapper.cpp"
-	"main.cpp"
-)
+	"main.cpp" "ui/gl/GPUDriverImpl.cpp" "ui/gl/GPUDriverImpl.h")
 
 add_subdirectory(dumper)
 add_subdirectory(patcher)
+add_subdirectory(ui)
 
-#Fetch & Install ChakraCore
-FetchContent_Declare(
-    ch
-    GIT_REPOSITORY https://github.com/chakra-core/ChakraCore.git
-    GIT_TAG master
-)
-FetchContent_GetProperties(ch)
-if(NOT ch_POPULATED)
-    FetchContent_Populate(ch)
-    execute_process(COMMAND msbuild /m /p:Platform=x64 /p:Configuration=${CMAKE_BUILD_TYPE} ${ch_SOURCE_DIR}/Build/Chakra.Core.sln)
-endif()
+set(SDK_ROOT "${CMAKE_BINARY_DIR}/SDK/")
+set(ULTRALIGHT_INCLUDE_DIR "${SDK_ROOT}/include")
+set(ULTRALIGHT_BINARY_DIR "${SDK_ROOT}/bin")
+set(ULTRALIGHT_RESOURCES_DIR "${SDK_ROOT}/resources")
+set(ULTRALIGHT_INSPECTOR_DIR "${SDK_ROOT}/inspector")
+set(ULTRALIGHT_LIBRARY_DIR "${SDK_ROOT}/lib")
 
-target_include_directories(Loader PRIVATE "${CMAKE_BINARY_DIR}/_deps/ch-src/lib/jsrt/")
-target_link_directories(Loader PRIVATE "${ch_SOURCE_DIR}/Build/VcBuild/bin/x64_${CMAKE_BUILD_TYPE}")
-
-target_link_libraries(Loader PRIVATE Common fmt PolyHook_2 SoupSDK ChakraCore)
+target_include_directories(Loader PRIVATE "${ULTRALIGHT_INCLUDE_DIR}")
+target_link_directories(Loader PRIVATE "${ULTRALIGHT_LIBRARY_DIR}")
+target_link_libraries(Loader PRIVATE Common fmt PolyHook_2 SoupSDK UltralightCore AppCore Ultralight WebCore glfw)
 
 # Add target to build dir
 add_custom_command(

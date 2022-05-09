@@ -13,7 +13,7 @@
 
 std::thread launchThread;
 
-JSValueRef NativeLaunch(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception) {
+jsfunction(NativeLaunch) {
     std::string userId = Steam::GetUserID();
     if (userId == "0") {
         Logger::Print<Logger::WARNING>("No steam account is logged in!");
@@ -67,8 +67,17 @@ JSValueRef NativeLaunch(JSContextRef ctx, JSObjectRef function, JSObjectRef this
 	return JSValueMakeBoolean(ctx, true);
 }
 
-JSValueRef AreWeNative(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
-{
+jsfunction(AreWeNative) {
     Logger::Print("Native check");
     return JSValueMakeBoolean(ctx, true);
+}
+
+jsfunction(NativeSetOption) {
+    if (argumentCount > 1) {
+        JSValueRef optionId = arguments[1];
+        switch (JSValueGetType(ctx, optionId)) {
+        case JSType::kJSTypeBoolean:
+            json
+        }
+    }
 }

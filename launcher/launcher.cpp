@@ -126,12 +126,18 @@ void Launcher::OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_m
 
     //Delete the js string we no longer need
     JSStringRelease(name);
-
-
+    
+    //areWeNative() JavaScript function definition
     JSStringRef sAreWeNative = JSStringCreateWithUTF8CString("areWeNative");
     JSObjectRef fAreWeNative = JSObjectMakeFunctionWithCallback(*ctx, sAreWeNative, AreWeNative);
     JSObjectSetProperty(*ctx, globalObj, sAreWeNative, fAreWeNative, 0, 0);
     JSStringRelease(sAreWeNative);
+
+    //nativeSetOption(settingId, value) JavaScript function definition
+    JSStringRef sNativeSetOption = JSStringCreateWithUTF8CString("nativeSetOption");
+    JSObjectRef fNativeSetOption = JSObjectMakeFunctionWithCallback(*ctx, sNativeSetOption, NativeSetOption);
+    JSObjectSetProperty(*ctx, globalObj, sNativeSetOption, fNativeSetOption, 0, 0);
+    JSStringRelease(sNativeSetOption);
 }
 
 void Launcher::OnChangeCursor(ultralight::View* caller, Cursor cursor) {

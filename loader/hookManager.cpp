@@ -82,6 +82,12 @@ void hkDecryptBytes(uint8_t** bytes) {
 	patchworkMutex.unlock();
 }
 
+static PLH::x64Detour* plhSwapBuffers;
+static uint64_t oSwapBuffers;
+bool hkSwapBuffers(HDC hdc, int b) {
+	return PLH::FnCast(oSwapBuffers, hkSwapBuffers)(hdc, b);
+}
+
 bool HookManager::ApplyHooks()
 {
 	plhDecompressFile = new PLH::x64Detour(oDecompressFile, (uint64_t)hkDecompressFile, &oDecompressFile);
@@ -94,6 +100,23 @@ bool HookManager::ApplyHooks()
 	if (!plhDecryptBytes->hook()) {
 		Logger::Print<Logger::FAILURE>("Failed to hook Bin2::DecryptBytes");
 		return false;
+	}
+
+	HMODULE hOpenGL = GetModuleHandleA("OPENGL32.dll");
+	if (hOpenGL) {
+		FARPROC pSwapBuffers = GetProcAddress(hOpenGL, "wglSwapBuffers");
+		if (pSwapBuffers) {
+			plhSwapBuffers = new PLH::x64Detour((uint64_t)pSwapBuffers, (uint64_t)hkSwapBuffers, &oSwapBuffers);
+			if (!plhSwapBuffers->hook()) {
+				Logger::Print<Logger::FAILURE>("Failed to hook wglSwapBuffers");
+			}
+		}
+		else {
+			Logger::Print<Logger::FAILURE>("Couldn't find wglSwapBuffers address");
+		}
+	}
+	else {
+		Logger::Print<Logger::FAILURE>("OpenGL was not found, but the game relies on it? Couldn't hook wglSwapBuffers");
 	}
 
     return true;

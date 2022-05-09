@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.17)
-project(SoupedModLoader VERSION 1.0 LANGUAGES CXX)
+project(SoupedModLoader VERSION 1.0 LANGUAGES C CXX)
 
 # Use C++ 20
 set(CMAKE_CXX_STANDARD 20)
@@ -40,6 +40,19 @@ if(NOT plh_POPULATED)
     set(POLYHOOK_BUILD_DLL ON)
     #set(POLYHOOK_BUILD_SHARED_LIB OFF)
     add_subdirectory(${plh_SOURCE_DIR} ${plh_BINARY_DIR})
+endif()
+
+#Add glfw
+FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY https://github.com/glfw/glfw.git
+    GIT_TAG master
+)
+FetchContent_GetProperties(glfw)
+if(NOT glfw_POPULATED)
+    FetchContent_Populate(glfw)
+    include_directories("${glfw_SOURCE_DIR}/include/")
+    add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
 endif()
 
 # Final output dir for compile files
