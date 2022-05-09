@@ -6,15 +6,26 @@
 
 using namespace JsNative;
 
-jsfunction(patchers::registerPatchers) {
-	if (jsargc > 0) {
-		unsigned int cbRefC = 0;
+jsfunction(patchers::registerPatcher) {
+	if (jsargc == 2) {
 		JsValueRef jsCallback = jsargv[1];
+		std::string targetFile = JSWrapper::ToCppString(jsargv[2]);
+		unsigned int cbRefC = 0;
+		unsigned int tfRefC = 0;
 		JsAddRef(jsCallback, &cbRefC);
-		std::function<bool(std::string, std::string&)> patchInvoker = [jsCallback, &cbRefC](std::string fileName, std::string& fileContent)->bool {
+		std::function<bool(std::string, std::string&)> patchInvoker = [jsCallback, targetFile, &cbRefC, &tfRefC](std::string fileName, std::string& fileContent)->bool {
 			JsAddRef(jsCallback, &cbRefC);
+			if (targetFile.size() == 0) {
+				Logger::Print<Logger::WARNING>("A javascript patcher was invoked with no target?");
+				return false;
+			}
+			if (fileName.find(targetFile) == std::string::npos) {
+				//The patch doesn't target this file
+				return false;
+			}
+			std::string patchResult;
 			bool success;
-			std::function<void()> doPatchwork = [&success, jsCallback, &cbRefC, fileName, &fileContent]() {
+			std::function<void()> doPatchwork = [&patchResult, &success, fileName, fileContent, &cbRefC, jsCallback]() {
 				JsAddRef(jsCallback, &cbRefC);
 				JsValueRef jsFileName = JSWrapper::FromCppString(fileName);
 				JsValueRef jsFileContent = JSWrapper::FromCppString(fileContent);
@@ -46,7 +57,7 @@ jsfunction(patchers::registerPatchers) {
 				JsBooleanToBool(successful, &success);
 				if (success) {
 					JsValueRef jsPatchedContent = JSWrapper::ReadProperty(result, L"data");
-					fileContent = JSWrapper::ToCppString(jsPatchedContent);
+					patchResult = JSWrapper::ToCppString(jsPatchedContent);
 				}
 
 				JsRelease(jsCallback, &cbRefC);
@@ -54,11 +65,16 @@ jsfunction(patchers::registerPatchers) {
 			};
 			JSWrapper::DoWork(doPatchwork);
 			JSWrapper::AwaitWork();
+			fileContent = patchResult;
+			Logger::Print("fileContent: {}", fileContent);
 			JsRelease(jsCallback, &cbRefC);
 			return success;
 		};
 		Patchers::RegisterPatcher(patchInvoker);
 		JsRelease(jsCallback, &cbRefC);
+	}
+	else {
+		Logger::Print<Logger::FAILURE>("patchers.registerPatchers called with the incorrect number of arguments");
 	}
 	return JS_INVALID_REFERENCE;
 }

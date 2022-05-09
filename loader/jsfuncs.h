@@ -13,6 +13,6 @@ namespace JsNative {
         jsfunction(print);
     }
     namespace patchers {
-        jsfunction(registerPatchers);
+        jsfunction(registerPatcher);
     }
 };

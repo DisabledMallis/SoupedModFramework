@@ -23,7 +23,7 @@ void JSWrapper::DoWork(std::function<void()> work) {
 void JSWrapper::AwaitWork()
 {
     while (!jsWork.empty()) {
-        Sleep(100);
+        Sleep(10);
         continue;
     }
 }
@@ -36,8 +36,8 @@ void JSWrapper::InitializeRuntime() {
                 continue;
             }
             std::function<void()> toDo = jsWork.back();
-            jsWork.pop_back();
             toDo();
+            jsWork.pop_back();
         }
     });
     std::function<void()> initialization = []() {
@@ -157,7 +157,7 @@ void JSWrapper::InitializeAPI() {
         JSWrapper::CreateFunction("print", console::print, console);
 
         JsValueRef patchers = JSWrapper::CreateObject("patchers");
-        JSWrapper::CreateFunction("registerPatcher", patchers::registerPatchers, patchers);
+        JSWrapper::CreateFunction("registerPatcher", patchers::registerPatcher, patchers);
 
         //Run the souped.js file
         std::filesystem::path soupedJsPath = "./js/souped.js";

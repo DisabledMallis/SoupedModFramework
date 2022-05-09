@@ -14,29 +14,26 @@ console.log = console.print;
 console.log("Welcome to souped.js!");
 
 //Patcher helper functions
-function createPatcher(callback, filename) {
+function createJsonPatcher(callback, filename) {
     patchers.registerPatcher((name, data) => {
-        if (name.includes(filename)) {
-            var dataObj = JSON.parse(data);
-            var { successful, data } = callback(dataObj);
-            if(successful) {
-                var patchedStr = JSON.stringify(data);
-                return { successful: successful, data: patchedStr };
-            }
-            return { successful: false, data: data };
+        var dataObj = JSON.parse(data);
+        var { successful, data } = callback(dataObj);
+        if (successful) {
+            var patchedStr = JSON.stringify(data);
+            return { successful: successful, data: patchedStr };
         }
-        return { successful: false, data: null };
-    });
+        return { successful: false, data: data };
+    }, filename);
 }
 
 function dartPatch(data) {
-    console.log("Dart type: "+data["type"]);
+    console.log("Dart type: " + data["type"]);
     var towerNodes = data["nodes"];
-    for(var i = 0; i < towerNodes.length; i++) {
+    for (var i = 0; i < towerNodes.length; i++) {
         var currentNode = towerNodes[i];
-        if(currentNode["id"] == 0) {
+        if (currentNode["id"] == 0) {
             var towerProps = currentNode["props"];
-            data["nodes"][i]["props"]["is_upgradable"] = false;
+            data["nodes"][i]["cost"] = 100;
             console.warn("DartMonkey patch successfully!");
             return { successful: true, data: data };
         }
@@ -44,4 +41,4 @@ function dartPatch(data) {
     return { successful: false, data: data };
 }
 
-createPatcher(dartPatch, "dart_monkey.tower_blueprint");
+createJsonPatcher(dartPatch, "dart_monkey.tower_blueprint");

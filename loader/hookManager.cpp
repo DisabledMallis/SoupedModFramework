@@ -61,6 +61,9 @@ void hkDecryptBytes(uint8_t** bytes) {
 	std::string fileContent = std::string(*(char**)bytes, (size_t)(bytes[1] - bytes[0]));
 	Patchers::PatchData(targetFile, fileContent);
 
+	//Place the patched data back into the buffer
+	memcpy(bytes[0], fileContent.c_str(), bytes[1] - bytes[0]);
+
 	//Print we finished patching
 	Logger::Print("Patched {}", targetFile);
 }
