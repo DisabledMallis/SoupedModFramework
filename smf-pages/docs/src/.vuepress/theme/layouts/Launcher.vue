@@ -1,9 +1,27 @@
+<template>
+    <div class="content">
+        <h1 v-if="!isOnLauncher()" class="browserWarn">It appears you are not viewing this page from the SMF launcher, anything done on this page likely won't have any effect</h1>
+		<header>
+			<h1 v-if="windowWidth >= 500">SoupedModFramework</h1>
+			<h1 v-else>SMF</h1>
+		</header>
+		<div class="body">
+            <Settings/>
+		</div>
+		<footer>
+			<LaunchButton />
+		</footer>
+	</div>
+</template>
+
 <script>
-import LaunchButton from './components/LaunchButton.vue'
+import LaunchButton from '../components/LaunchButton.vue'
+import Settings from '../components/Settings.vue'
 
 export default {
 	components: {
-		LaunchButton
+		LaunchButton,
+        Settings
 	},
 	data() {
 		return {
@@ -28,26 +46,19 @@ export default {
         onResize() {
             this.windowHeight = window.innerHeight;
             this.windowWidth = window.innerWidth;
+        },
+        isOnLauncher() {
+            try {
+                return areWeNative();
+            } catch {
+                return false;
+            }
         }
     }
 }
 </script>
 
-<template>
-	<div v-if="windowWidth >= 500" class="content">
-		<header>
-			<h1>SoupedModFramework</h1>
-		</header>
-		<div class="body">
-		</div>
-		<footer>
-			<LaunchButton />
-		</footer>
-	</div>
-	<p v-else>Window too small</p>
-</template>
-
-<style>
+<style lang="stylus">
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap');
 
 html, body {
@@ -56,6 +67,15 @@ html, body {
 	background-color: #131313;
 	color: #FFFFFF;
 	font-family: 'Roboto', sans-serif;
+}
+
+.browserWarn {
+    border-style: solid;
+    border-color: #FF0000;
+    background-color: #FF00007F;
+	grid-row: 2 / 8;
+    grid-column: 3;
+    overflow-y: scroll;
 }
 
 .content {
@@ -75,6 +95,7 @@ header {
 
 .body {
 	grid-row: 2 / 8;
+    grid-column: 2;
 }
 
 footer {

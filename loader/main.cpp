@@ -45,8 +45,6 @@ int __stdcall hkwWinMain(
 	IPC::ClosePipe(hPipe);
 	Logger::Print("Launcher killed & pipe closed");
 
-	std::cin.get();
-
 	return PLH::FnCast(owWinMain, hkwWinMain)(
 		hInstance,
 		hPrevInstance,

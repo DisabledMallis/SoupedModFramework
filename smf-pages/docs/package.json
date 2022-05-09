@@ -1,0 +1,23 @@
+{
+  "name": "smf-pages",
+  "version": "0.0.1",
+  "description": "SoupedModFramework documentation and website",
+  "main": "index.js",
+  "authors": {
+    "name": "",
+    "email": ""
+  },
+  "repository": "https://github.com/DisabledMallis/SoupedModFramework/smf-pages",
+  "scripts": {
+    "dev": "vuepress dev src",
+    "build": "vuepress build src"
+  },
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "vuepress": "^1.5.3"
+  },
+  "dependencies": {
+    "request-promise": "^4.2.6",
+    "vuepress-theme-default-prefers-color-scheme": "^2.0.0"
+  }
+}
