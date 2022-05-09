@@ -38,7 +38,7 @@ jobs:
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./smf-pages/docs/dist
+        publish_dir: ./smf-pages/docs/src/.vuepress/dist
         cname: souped.dev
         enable_jekyll: false
         user_name: 'github-actions[bot]'
