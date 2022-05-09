@@ -43,6 +43,16 @@
             :item="downloadLink"
           />
         </p>
+
+        <p
+          v-if="data.discordText && data.discordLink"
+          class="action"
+        >
+          <NavLink
+            class="action-button"
+            :item="discordLink"
+          />
+        </p>
       </div>
     </header>
 
@@ -101,6 +111,13 @@ export default {
         return {
             link: this.data.downloadLink,
             text: this.data.downloadText
+        }
+    },
+
+    discordLink() {
+        return {
+            link: this.data.discordLink,
+            text: this.data.discordText
         }
     }
   }

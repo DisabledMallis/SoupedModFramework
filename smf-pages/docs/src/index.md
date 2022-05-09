@@ -9,6 +9,9 @@ actionLink: /guide/
 downloadText: Downloads
 downloadLink: https://github.com/DisabledMallis/SoupedModFramework/releases
 
+discordText: Discord
+discordLink: https://discord.gg/nPcBPyHP4c
+
 features:
 - title: Flexible
   details: Mods are written in JavaScript, a very popular scripting language that perfectly suits the needs of mod developers
