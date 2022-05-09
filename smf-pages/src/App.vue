@@ -5,13 +5,35 @@ export default {
 	components: {
 		LinkButton
 	},
+	data() {
+		return {
+			windowHeight: window.innerHeight,
+			windowWidth: window.innerWidth,
+		}
+	},
+	mounted() {
+        this.$nextTick(() => {
+            window.addEventListener('resize', this.onResize);
+        })
+    },
+	beforeUnmount() { 
+        window.removeEventListener('resize', this.onResize); 
+    },
+	methods: {
+        onResize() {
+            this.windowHeight = screen.width;
+            this.windowWidth = screen.width;
+			console.log(this.windowWidth);
+        }
+    }
 }
 </script>
 
 <template>
 	<div class="content">
 		<header>
-			<h1>SoupedModFramework</h1>
+			<h1 v-if="windowWidth >= 650">SoupedModFramework</h1>
+			<h1 v-else>SMF</h1>
 			<p>A Bloons TD Battles 2 modding framework with flexibility in mind</p>
 		</header>
 		<div class="body">
