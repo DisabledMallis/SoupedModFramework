@@ -15,9 +15,6 @@ This is the SMF mod loader. Once inside of BTDB2, it will hook functions necessa
 ## ModFS
 An api for interacting with `.smf` files. These files are the mods a user wants to load. It is a JSON based archive format, meaning all data is JSON serialized.
 
-## SMFApi
-SMFApi is a JavaScript library for interacting and modifying the game's assets at runtime. It is helpful for modders since it provides a way to easily modify content, as well as distribute it without breaking copyright law.
-
 ## Proxy
 The proxy dll responsible for bootstrapping required loaders.
 
