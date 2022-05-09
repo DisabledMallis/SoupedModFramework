@@ -1,7 +1,6 @@
 <template>
     <div class="content">
-        <h1 v-if="!isOnLauncher()" class="browserWarn">It appears you are not viewing this page from the SMF launcher, anything done on this page likely won't have any effect</h1>
-		<header>
+        <header>
 			<h1>SoupedModFramework</h1>
 		</header>
 		<div class="body">
