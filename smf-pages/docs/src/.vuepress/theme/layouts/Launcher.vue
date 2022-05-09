@@ -25,27 +25,10 @@ export default {
 	},
 	data() {
 		return {
-			windowHeight: window.innerHeight,
-			windowWidth: window.innerWidth,
 		}
 	},
-	watch: {
-        windowHeight(newHeight, oldHeight) {
-            this.txt = `it changed to ${newHeight} from ${oldHeight}`;
-        }
-    },
-	mounted() {
-        this.$nextTick(() => {
-            window.addEventListener('resize', this.onResize);
-        })
-    },
-	beforeUnmount() { 
-        window.removeEventListener('resize', this.onResize); 
-    },
 	methods: {  
         onResize() {
-            this.windowHeight = window.innerHeight;
-            this.windowWidth = window.innerWidth;
         },
         isOnLauncher() {
             try {
