@@ -69,7 +69,7 @@ module.exports = {
   async additionalPages() {
     return [
       {
-        path: "/launcher",
+        path: "/launcher.html",
         frontmatter: {
           layout: 'Launcher'
         }
