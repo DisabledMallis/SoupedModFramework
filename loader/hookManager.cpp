@@ -14,6 +14,7 @@
 
 
 std::stack<std::string> patchworkStack;
+std::mutex patchworkMutex;
 
 static PLH::x64Detour* plhDecompressFile;
 static uint64_t oDecompressFile = Memory::FindSig(Soup::Signatures::SIG_ZIPCPP_DECOMPRESSFILE);
@@ -35,7 +36,9 @@ int hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32
 	}
 	else {
 		Dumper::DumpToDisk(fileName, bundlePath, std::string(lpReadBuffer, bufferSize));
+		patchworkMutex.lock();
 		patchworkStack.push(fileName);
+		patchworkMutex.unlock();
 	}
 
 	return ret;
@@ -45,8 +48,11 @@ static PLH::x64Detour* plhDecryptBytes;
 static uint64_t oDecryptBytes = Memory::FindSig(Soup::Signatures::SIG_BIN2_DECRYPTBYTES);
 void hkDecryptBytes(uint8_t** bytes) {
 	PLH::FnCast(oDecryptBytes, hkDecryptBytes)(bytes);
+
+	patchworkMutex.lock();
 	//If theres nothing to patch we're done
 	if (patchworkStack.empty()) {
+		patchworkMutex.unlock();
 		return;
 	}
 	//Get the first file in the stack
@@ -61,11 +67,19 @@ void hkDecryptBytes(uint8_t** bytes) {
 	std::string fileContent = std::string(*(char**)bytes, (size_t)(bytes[1] - bytes[0]));
 	Patchers::PatchData(targetFile, fileContent);
 
+	//Safety checks
+	size_t bufferSize = bytes[1] - bytes[0];
+	if (bufferSize < fileContent.size()) {
+		Logger::Print<Logger::WARNING>("WARNING: There is not enough space allocated to apply this patch!");
+	}
+
 	//Place the patched data back into the buffer
 	memcpy(bytes[0], fileContent.c_str(), bytes[1] - bytes[0]);
 
 	//Print we finished patching
 	Logger::Print("Patched {}", targetFile);
+
+	patchworkMutex.unlock();
 }
 
 bool HookManager::ApplyHooks()
