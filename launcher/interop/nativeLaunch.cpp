@@ -66,3 +66,9 @@ JSValueRef NativeLaunch(JSContextRef ctx, JSObjectRef function, JSObjectRef this
 
 	return JSValueMakeBoolean(ctx, true);
 }
+
+JSValueRef AreWeNative(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
+{
+    Logger::Print("Native check");
+    return JSValueMakeBoolean(ctx, true);
+}

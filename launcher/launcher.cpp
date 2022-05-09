@@ -30,9 +30,9 @@ Launcher::Launcher() {
     /// Load a page into our overlay's View
     ///
     overlay_->view()->LoadURL("http://souped.dev/launcher.html");
-/*
+    /*
 #ifdef _DEBUG
-    overlay_->view()->LoadURL("http://localhost:8080/launcher");
+    overlay_->view()->LoadURL("http://localhost:8080/launcher.html");
 #else
     overlay_->view()->LoadURL("http://souped.dev/launcher.html");
 #endif
@@ -126,6 +126,12 @@ void Launcher::OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_m
 
     //Delete the js string we no longer need
     JSStringRelease(name);
+
+
+    JSStringRef sAreWeNative = JSStringCreateWithUTF8CString("areWeNative");
+    JSObjectRef fAreWeNative = JSObjectMakeFunctionWithCallback(*ctx, sAreWeNative, AreWeNative);
+    JSObjectSetProperty(*ctx, globalObj, sAreWeNative, fAreWeNative, 0, 0);
+    JSStringRelease(sAreWeNative);
 }
 
 void Launcher::OnChangeCursor(ultralight::View* caller, Cursor cursor) {

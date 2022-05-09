@@ -2,8 +2,7 @@
     <div class="content">
         <h1 v-if="!isOnLauncher()" class="browserWarn">It appears you are not viewing this page from the SMF launcher, anything done on this page likely won't have any effect</h1>
 		<header>
-			<h1 v-if="windowWidth >= 500">SoupedModFramework</h1>
-			<h1 v-else>SMF</h1>
+			<h1>SoupedModFramework</h1>
 		</header>
 		<div class="body">
             <Settings/>
@@ -34,6 +33,7 @@ export default {
             try {
                 return areWeNative();
             } catch {
+                console.log("We are not on native!");
                 return false;
             }
         }
