@@ -9,6 +9,7 @@ set(ULTRALIGHT_INCLUDE_DIR "${SDK_ROOT}/include")
 set(ULTRALIGHT_BINARY_DIR "${SDK_ROOT}/bin")
 set(ULTRALIGHT_RESOURCES_DIR "${SDK_ROOT}/resources")
 set(ULTRALIGHT_INSPECTOR_DIR "${SDK_ROOT}/inspector")
+set(ULTRALIGHT_LIBRARY_DIR "${SDK_ROOT}/lib")
 
 target_include_directories(Launcher PRIVATE "${ULTRALIGHT_INCLUDE_DIR}")
 target_link_directories(Launcher PRIVATE "${ULTRALIGHT_LIBRARY_DIR}")

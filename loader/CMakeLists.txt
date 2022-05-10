@@ -2,9 +2,8 @@ add_library(Loader SHARED)
 
 target_sources(Loader PRIVATE
 	"hookManager.cpp"
-	"jsfuncs.cpp"
-	"jswrapper.cpp"
-	"main.cpp" "ui/gl/GPUDriverImpl.cpp" "ui/gl/GPUDriverImpl.h")
+	"main.cpp"
+)
 
 add_subdirectory(dumper)
 add_subdirectory(patcher)
@@ -19,7 +18,7 @@ set(ULTRALIGHT_LIBRARY_DIR "${SDK_ROOT}/lib")
 
 target_include_directories(Loader PRIVATE "${ULTRALIGHT_INCLUDE_DIR}")
 target_link_directories(Loader PRIVATE "${ULTRALIGHT_LIBRARY_DIR}")
-target_link_libraries(Loader PRIVATE Common fmt PolyHook_2 SoupSDK UltralightCore AppCore Ultralight WebCore glfw)
+target_link_libraries(Loader PRIVATE Common fmt PolyHook_2 SoupSDK UltralightCore AppCore Ultralight WebCore glfw opengl32)
 
 # Add target to build dir
 add_custom_command(
@@ -27,9 +26,6 @@ add_custom_command(
 	COMMAND ${CMAKE_COMMAND} -E copy
 		${CMAKE_BINARY_DIR}/loader/Loader.dll
 		${FINAL_DIR}/loaders/Loader.dll
-	COMMAND ${CMAKE_COMMAND} -E copy
-		${ch_SOURCE_DIR}/Build/VcBuild/bin/x64_${CMAKE_BUILD_TYPE}/ChakraCore.dll
-		${FINAL_DIR}/ChakraCore.dll
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		${CMAKE_CURRENT_LIST_DIR}/js
 		${FINAL_DIR}/js

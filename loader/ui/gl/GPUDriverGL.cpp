@@ -5,17 +5,10 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#if ENABLE_OFFSCREEN_GL
 #include "shader_fill_frag.h"
 #include "shader_fill_path_frag.h"
 #include "shader_v2f_c4f_t2f_t2f_d28f_vert.h"
 #include "shader_v2f_c4f_t2f_vert.h"
-#else
-#include "../../../shaders/glsl/shader_fill_frag.h"
-#include "../../../shaders/glsl/shader_fill_path_frag.h"
-#include "../../../shaders/glsl/shader_v2f_c4f_t2f_t2f_d28f_vert.h"
-#include "../../../shaders/glsl/shader_v2f_c4f_t2f_vert.h"
-#endif
 
 #define SHADER_PATH "glsl/"
 
@@ -31,6 +24,7 @@
 
 #if _WIN32
 #include <Windows.h>
+#include <logger.h>
 #define FATAL(x) { std::stringstream str; \
   str << "[ERROR] " << __FUNCSIG__ << " @ Line " << __LINE__ << ":\n\t" << x << std::endl; \
   OutputDebugStringA(str.str().c_str()); \
@@ -189,6 +183,7 @@ void GPUDriverGL::SetRenderBufferBitmapDirty(uint32_t render_buffer_id,
 
 void GPUDriverGL::CreateTexture(uint32_t texture_id,
   RefPtr<Bitmap> bitmap) {
+
   if (bitmap->IsEmpty()) {
     CreateFBOTexture(texture_id, bitmap);
     return;
@@ -269,6 +264,11 @@ void GPUDriverGL::BindTexture(uint8_t texture_unit, uint32_t texture_id) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   CHECK_GL();
+}
+
+uint32_t GPUDriverGL::GetNativeTextureID(uint32_t texture_id) {
+    TextureEntry& entry = texture_map[texture_id];
+    return entry.tex_id;
 }
 
 void GPUDriverGL::DestroyTexture(uint32_t texture_id) {

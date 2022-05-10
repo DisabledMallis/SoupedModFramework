@@ -5,7 +5,6 @@
 #include <polyhook2/Detour/x64Detour.hpp>
 #include <ipc.h>
 #include <SoupSTL.h>
-#include <jswrapper.h>
 
 static PLH::x64Detour* plhwWinMain;
 static uint64_t owWinMain;
@@ -29,13 +28,6 @@ int __stdcall hkwWinMain(
 	}
 
 	Logger::Print("Hooks ready");
-
-	Logger::Print("Loading ChakraCore...");
-	JSWrapper::InitializeRuntime();
-	Logger::Print("ChakraCore ready");
-	Logger::Print("Loading SMF API...");
-	JSWrapper::InitializeAPI();
-	Logger::Print("SMF API ready");
 
 	Logger::Print("Killing launcher");
 	HANDLE hPipe = IPC::OpenPipe(LAUNCH_STATUS_PIPE);

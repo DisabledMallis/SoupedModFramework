@@ -1,10 +1,19 @@
 #include "webui.h"
 #include "gl/GPUDriverGL.h"
+#include <logger.h>
+#include <imgui.h>
 
 using namespace ultralight;
 
 void WebUI::Init()
 {
+	if (glfwInit() != GLFW_TRUE) {
+		MessageBoxA(0, "SoupedModFramework couldn't initialize GLFW, and as a result it must exit", "GLFW Error", MB_OK);
+		exit(0);
+	}
+	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+	gladLoadGL();
+
 	Config config;
 
 	///
@@ -13,6 +22,8 @@ void WebUI::Init()
 	///
 	config.resource_path_prefix = "./assets/resources/";
 
+	config.num_renderer_threads = 1;
+
 	///
 	/// Pass our configuration to the Platform singleton so that
 	/// the library can use it.
@@ -20,8 +31,14 @@ void WebUI::Init()
 	Platform::instance().set_config(config);
 }
 
+static GPUContextGL* gpuContext;
+static GPUDriverGL* gpuDriver;
+static uint32_t renderTarget = 0;
 void WebUI::InitPlatform()
 {
+	gpuContext = new GPUContextGL(false, false);
+	gpuDriver = (GPUDriverGL*)gpuContext->driver();
+
 	///
 	/// Use the OS's native font loader
 	///
@@ -39,10 +56,11 @@ void WebUI::InitPlatform()
 	Platform::instance().set_logger(GetDefaultLogger("ultralight.log"));
 
 	//Set the GPU driver
-	Platform::instance().set_gpu_driver(new GPUDriverGL(new GPUContextGL(false, false)));
+	Platform::instance().set_gpu_driver(gpuDriver);
 }
 
 static RefPtr<Renderer> renderer;
+static RefPtr<View> view;
 void WebUI::CreateRenderer()
 {
 	///
@@ -56,14 +74,13 @@ void WebUI::CreateRenderer()
 	renderer = Renderer::Create();
 }
 
-static RefPtr<View> view;
 void WebUI::CreateView()
 {
 	ViewConfig config;
 	config.enable_images = true;
 	config.enable_javascript = true;
 	config.is_transparent = true;
-	config.is_accelerated = true;
+	config.is_accelerated = false;
 
 	///
 	/// Create an HTML view, 500 by 500 pixels large.
@@ -73,7 +90,7 @@ void WebUI::CreateView()
 	///
 	/// Load a raw string of HTML.
 	///
-	view->LoadHTML("<h1>Hello World!</h1>");
+	view->LoadHTML("<body style=\"background-color: #00000000;\"><h1 style=\"color: white;\">Hello World!</h1></body>");
 
 	///
 	/// Notify the View it has input focus (updates appearance).
@@ -81,30 +98,21 @@ void WebUI::CreateView()
 	view->Focus();
 }
 
+void WebUI::SetSize(int w, int h)
+{
+	view->Resize(w, h);
+}
+
 void WebUI::CopyBitmapToTexture(RefPtr<Bitmap> bitmap)
 {
-	///
-	/// Lock the Bitmap to retrieve the raw pixels.
-	/// The format is BGRA, 8-bpp, premultiplied alpha.
-	///
-	void* pixels = bitmap->LockPixels();
-
-	///
-	/// Get the bitmap dimensions.
-	///
-	uint32_t width = bitmap->width();
-	uint32_t height = bitmap->height();
-	uint32_t stride = bitmap->row_bytes();
-
-	///
-	/// Psuedo-code to upload our pixels to a GPU texture.
-	///
-	CopyPixelsToTexture(pixels, width, height, stride);
-
-	///
-	/// Unlock the Bitmap when we are done.
-	///
-	bitmap->UnlockPixels();
+	if (renderTarget == 0) {
+		::Logger::Print("Netx tex id");
+		renderTarget = gpuDriver->NextTextureId();
+		::Logger::Print("Create new texture");
+		gpuDriver->CreateTexture(renderTarget, bitmap);
+	}
+	::Logger::Print("Update tex");
+	gpuDriver->UpdateTexture(renderTarget, bitmap);
 }
 
 void WebUI::UpdateLogic()
@@ -123,28 +131,48 @@ void WebUI::RenderOneFrame()
 	///
 	renderer->Render();
 
+	::Logger::Print("Get render surface");
+	BitmapSurface* surface = (BitmapSurface*)(view->surface());
+
 	///
-	/// Psuedo-code to loop through all active Views.
+	/// Check if our Surface is dirty (pixels have changed).
 	///
-	for (auto view : view_list) {
+	::Logger::Print("Dirty check");
+	if (!surface->dirty_bounds().IsEmpty()) {
 		///
-		/// Get the Surface as a BitmapSurface (the default implementation).
+		/// Psuedo-code to upload Surface's bitmap to GPU texture.
 		///
-		BitmapSurface* surface = (BitmapSurface*)(view->surface());
+		::Logger::Print("Copy bitmap");
+		CopyBitmapToTexture(surface->bitmap());
 
 		///
-		/// Check if our Surface is dirty (pixels have changed).
+		/// Clear the dirty bounds.
 		///
-		if (!surface->dirty_bounds().IsEmpty()) {
-			///
-			/// Psuedo-code to upload Surface's bitmap to GPU texture.
-			///
-			CopyBitmapToTexture(surface->bitmap());
+		::Logger::Print("Clear dirty");
+		surface->ClearDirtyBounds();
+	}
 
-			///
-			/// Clear the dirty bounds.
-			///
-			surface->ClearDirtyBounds();
-		}
+	if (renderTarget) {
+		::Logger::Print("Drawing texture...");
+		DrawTexture(renderTarget, 0, 0, view->width(), view->height(), 0);
+		::Logger::Print("Texture drawn");
+	}
+}
+	
+
+void WebUI::DrawTexture(uint32_t texId, float x, float y, float w, float h, float angle)
+{
+	ImGui::SetNextWindowPos(ImVec2(x, y));
+	ImGui::SetNextWindowSize(ImVec2(w, h));
+	ImGui::Begin("##webview", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoTitleBar);
+	
+	uint32_t nativeTexture = gpuDriver->GetNativeTextureID(texId);
+	ImGui::Image((void*)nativeTexture, ImGui::GetWindowSize());
+	ImGui::End();
+
+	int gle = glGetError();
+	if (gle != GL_NO_ERROR) {
+		using namespace Logger;
+		::Logger::Print<::Logger::WARNING>("GL Error: {}", gle);
 	}
 }

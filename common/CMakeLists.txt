@@ -3,6 +3,7 @@ include(ExternalProject)
 add_library(Common SHARED)
 
 add_subdirectory(utils)
+add_subdirectory(imgui)
 
 set(SDK_ROOT "${CMAKE_BINARY_DIR}/SDK/")
 set(ULTRALIGHT_INCLUDE_DIR "${SDK_ROOT}/include")

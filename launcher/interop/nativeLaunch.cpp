@@ -75,9 +75,6 @@ jsfunction(AreWeNative) {
 jsfunction(NativeSetOption) {
     if (argumentCount > 1) {
         JSValueRef optionId = arguments[1];
-        switch (JSValueGetType(ctx, optionId)) {
-        case JSType::kJSTypeBoolean:
-            json
-        }
     }
+    return 0;
 }

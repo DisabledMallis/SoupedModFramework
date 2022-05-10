@@ -11,7 +11,10 @@
 #include <Windows.h>
 #include <stack>
 #include <polyhook2/Detour/x64Detour.hpp>
-
+#include "ui/webui.h"
+#include <imgui.h>
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_win32.h>
 
 std::stack<std::string> patchworkStack;
 std::mutex patchworkMutex;
@@ -82,9 +85,80 @@ void hkDecryptBytes(uint8_t** bytes) {
 	patchworkMutex.unlock();
 }
 
+static HWND hGameWindow;
+static WNDPROC oWndProc;
+LRESULT hkWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	if (!oWndProc) {
+		return 0;
+	}
+
+	if (uMsg == WM_SIZE) {
+		UINT width = LOWORD(lParam);
+		UINT height = HIWORD(lParam);
+		WebUI::SetSize(width, height);
+	}
+
+	RECT r;
+	if (GetWindowRect(hWnd, &r)) {
+		WebUI::SetSize(r.right - r.left, r.bottom - r.top);
+	}
+
+	WebUI::UpdateLogic();
+
+	return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
+}
+
 static PLH::x64Detour* plhSwapBuffers;
 static uint64_t oSwapBuffers;
+static bool initUi = false;
+static HGLRC overlayContext;
+
 bool hkSwapBuffers(HDC hdc, int b) {
+	HGLRC originalContext = wglGetCurrentContext();
+	if (!initUi) {
+		overlayContext = wglCreateContext(hdc);
+
+		Logger::Print("WebUI Not Initialized");
+		WebUI::Init();
+		Logger::Print("WebUI Init");
+		WebUI::InitPlatform();
+		Logger::Print("WebUI InitPlatform");
+		WebUI::CreateRenderer();
+		Logger::Print("WebUI CreateRenderer");
+		WebUI::CreateView();
+		Logger::Print("WebUI CreateView");
+
+		hGameWindow = WindowFromDC(hdc);
+		oWndProc = (WNDPROC)SetWindowLongPtr(hGameWindow, GWLP_WNDPROC, (__int3264)(LONG_PTR)hkWndProc);
+		Logger::Print("WebUI WndProc");
+
+		// Init glew, create imgui context, init imgui
+		ImGui::CreateContext();
+		ImGui_ImplWin32_Init(hGameWindow);
+		ImGui_ImplOpenGL3_Init();
+		ImGui::StyleColorsDark();
+		ImGui::CaptureMouseFromApp();
+
+		initUi = true;
+		Logger::Print("Init done");
+		return PLH::FnCast(oSwapBuffers, hkSwapBuffers)(hdc, b);
+	}
+
+	wglMakeCurrent(hdc, overlayContext);
+
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	Logger::Print("WebUI Rendering");
+	WebUI::RenderOneFrame();
+	Logger::Print("WebUI Rendered");
+
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+	wglMakeCurrent(hdc, originalContext);
+
 	return PLH::FnCast(oSwapBuffers, hkSwapBuffers)(hdc, b);
 }
 
@@ -109,14 +183,17 @@ bool HookManager::ApplyHooks()
 			plhSwapBuffers = new PLH::x64Detour((uint64_t)pSwapBuffers, (uint64_t)hkSwapBuffers, &oSwapBuffers);
 			if (!plhSwapBuffers->hook()) {
 				Logger::Print<Logger::FAILURE>("Failed to hook wglSwapBuffers");
+				return false;
 			}
 		}
 		else {
 			Logger::Print<Logger::FAILURE>("Couldn't find wglSwapBuffers address");
+			return false;
 		}
 	}
 	else {
 		Logger::Print<Logger::FAILURE>("OpenGL was not found, but the game relies on it? Couldn't hook wglSwapBuffers");
+		return false;
 	}
 
     return true;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <JavaScriptCore/JavaScript.h>
+#include <jsutils.h>
 
 jsfunction(AreWeNative);
 jsfunction(NativeLaunch);

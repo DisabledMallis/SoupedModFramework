@@ -42,6 +42,8 @@ public:
   virtual void BindTexture(uint8_t texture_unit,
     uint32_t texture_id) override;
 
+  uint32_t GetNativeTextureID(uint32_t texture_id);
+
   virtual void DestroyTexture(uint32_t texture_id) override;
 
   virtual void CreateRenderBuffer(uint32_t render_buffer_id,
