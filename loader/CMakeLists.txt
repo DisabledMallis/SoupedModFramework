@@ -29,4 +29,7 @@ add_custom_command(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		${CMAKE_CURRENT_LIST_DIR}/js
 		${FINAL_DIR}/js
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		${CMAKE_CURRENT_LIST_DIR}/assets
+		${FINAL_DIR}/assets
 )

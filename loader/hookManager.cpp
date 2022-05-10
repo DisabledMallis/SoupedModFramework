@@ -92,15 +92,9 @@ LRESULT hkWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		return 0;
 	}
 
-	if (uMsg == WM_SIZE) {
-		UINT width = LOWORD(lParam);
-		UINT height = HIWORD(lParam);
-		WebUI::SetSize(width, height);
-	}
-
 	RECT r;
-	if (GetWindowRect(hWnd, &r)) {
-		WebUI::SetSize(r.right - r.left, r.bottom - r.top);
+	if (GetClientRect(hWnd, &r)) {
+		WebUI::SetRect(r.left, r.top, r.right - r.left, r.bottom - r.top);
 	}
 
 	WebUI::UpdateLogic();
@@ -118,19 +112,13 @@ bool hkSwapBuffers(HDC hdc, int b) {
 	if (!initUi) {
 		overlayContext = wglCreateContext(hdc);
 
-		Logger::Print("WebUI Not Initialized");
 		WebUI::Init();
-		Logger::Print("WebUI Init");
 		WebUI::InitPlatform();
-		Logger::Print("WebUI InitPlatform");
 		WebUI::CreateRenderer();
-		Logger::Print("WebUI CreateRenderer");
 		WebUI::CreateView();
-		Logger::Print("WebUI CreateView");
 
 		hGameWindow = WindowFromDC(hdc);
 		oWndProc = (WNDPROC)SetWindowLongPtr(hGameWindow, GWLP_WNDPROC, (__int3264)(LONG_PTR)hkWndProc);
-		Logger::Print("WebUI WndProc");
 
 		// Init glew, create imgui context, init imgui
 		ImGui::CreateContext();
@@ -140,7 +128,6 @@ bool hkSwapBuffers(HDC hdc, int b) {
 		ImGui::CaptureMouseFromApp();
 
 		initUi = true;
-		Logger::Print("Init done");
 		return PLH::FnCast(oSwapBuffers, hkSwapBuffers)(hdc, b);
 	}
 
@@ -150,9 +137,7 @@ bool hkSwapBuffers(HDC hdc, int b) {
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
-	Logger::Print("WebUI Rendering");
 	WebUI::RenderOneFrame();
-	Logger::Print("WebUI Rendered");
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

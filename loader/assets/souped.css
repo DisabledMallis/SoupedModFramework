@@ -1,0 +1,26 @@
+body {
+    background-color: #000000DF;
+    font-family: 'Roboto', sans-serif;
+    color: #FFF;
+}
+
+.smfLoadNotif {
+}
+
+.successfulPatches {
+    overflow-x: scroll;
+    overflow-y: scroll;
+}
+
+h1 {
+    font-size: 72px;
+    overflow-wrap: anywhere;
+}
+
+p {
+    font-size: 24px;
+}
+
+log {
+    display: block;
+}

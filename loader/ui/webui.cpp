@@ -60,6 +60,10 @@ void WebUI::InitPlatform()
 }
 
 static RefPtr<Renderer> renderer;
+int vx = 0;
+int vy = 0;
+int vw = 640;
+int vh = 480;
 static RefPtr<View> view;
 void WebUI::CreateRenderer()
 {
@@ -90,7 +94,7 @@ void WebUI::CreateView()
 	///
 	/// Load a raw string of HTML.
 	///
-	view->LoadHTML("<body style=\"background-color: #00000000;\"><h1 style=\"color: white;\">Hello World!</h1></body>");
+	view->LoadURL("file:///assets/souped.html");
 
 	///
 	/// Notify the View it has input focus (updates appearance).
@@ -98,20 +102,20 @@ void WebUI::CreateView()
 	view->Focus();
 }
 
-void WebUI::SetSize(int w, int h)
+void WebUI::SetRect(int x, int y, int w, int h)
 {
-	view->Resize(w, h);
+	vx = x;
+	vy = y;
+	vw = w;
+	vh = h;
 }
 
 void WebUI::CopyBitmapToTexture(RefPtr<Bitmap> bitmap)
 {
 	if (renderTarget == 0) {
-		::Logger::Print("Netx tex id");
 		renderTarget = gpuDriver->NextTextureId();
-		::Logger::Print("Create new texture");
 		gpuDriver->CreateTexture(renderTarget, bitmap);
 	}
-	::Logger::Print("Update tex");
 	gpuDriver->UpdateTexture(renderTarget, bitmap);
 }
 
@@ -126,36 +130,32 @@ void WebUI::UpdateLogic()
 
 void WebUI::RenderOneFrame()
 {
+	view->Resize(vw, vh);
+
 	///
 	/// Render all active Views (this updates the Surface for each View).
 	///
 	renderer->Render();
 
-	::Logger::Print("Get render surface");
 	BitmapSurface* surface = (BitmapSurface*)(view->surface());
 
 	///
 	/// Check if our Surface is dirty (pixels have changed).
 	///
-	::Logger::Print("Dirty check");
 	if (!surface->dirty_bounds().IsEmpty()) {
 		///
 		/// Psuedo-code to upload Surface's bitmap to GPU texture.
 		///
-		::Logger::Print("Copy bitmap");
 		CopyBitmapToTexture(surface->bitmap());
 
 		///
 		/// Clear the dirty bounds.
 		///
-		::Logger::Print("Clear dirty");
 		surface->ClearDirtyBounds();
 	}
 
 	if (renderTarget) {
-		::Logger::Print("Drawing texture...");
-		DrawTexture(renderTarget, 0, 0, view->width(), view->height(), 0);
-		::Logger::Print("Texture drawn");
+		DrawTexture(renderTarget, vx, vy, vw, vh, 0);
 	}
 }
 	
@@ -164,11 +164,14 @@ void WebUI::DrawTexture(uint32_t texId, float x, float y, float w, float h, floa
 {
 	ImGui::SetNextWindowPos(ImVec2(x, y));
 	ImGui::SetNextWindowSize(ImVec2(w, h));
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
 	ImGui::Begin("##webview", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoTitleBar);
 	
 	uint32_t nativeTexture = gpuDriver->GetNativeTextureID(texId);
+	ImGui::SetCursorPos(ImVec2(0, 0));
 	ImGui::Image((void*)nativeTexture, ImGui::GetWindowSize());
 	ImGui::End();
+	ImGui::PopStyleColor();
 
 	int gle = glGetError();
 	if (gle != GL_NO_ERROR) {

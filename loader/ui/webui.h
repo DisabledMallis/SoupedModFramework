@@ -10,7 +10,7 @@ namespace WebUI {
 	void InitPlatform();
 	void CreateRenderer();
 	void CreateView();
-	void SetSize(int w, int h);
+	void SetRect(int x, int y, int w, int h);
 	void CopyBitmapToTexture(RefPtr<Bitmap> bitmap);
 	void UpdateLogic();
 	void RenderOneFrame();

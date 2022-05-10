@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://unpkg.com/vue@3"></script>
+    <div id="app">{{ message }}</div>
+    <script type="module">
+        const { createApp } = Vue
+
+        createApp({
+            data() {
+                return {
+                    message: 'SoupedModFramework'
+                }
+            }
+        }).mount('#app')
+    </script>
+</head>
+</html>
