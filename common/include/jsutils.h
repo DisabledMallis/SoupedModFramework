@@ -15,7 +15,7 @@ namespace JSUtils {
 	JSStringRef CreateString(std::string text);
 	std::string GetString(JSStringRef text);
 	JSValueRef GetUndefined();
-	JSValueRef CallFunction(JSObjectRef func, const JSValueRef* argv, int argc);
+	JSValueRef CallFunction(JSObjectRef func, JSObjectRef thisPtr, const JSValueRef* argv, int argc);
 	JSValueRef ReadProperty(JSObjectRef obj, std::string prop);
 	JSObjectRef CreateObject(std::string objectName, JSObjectRef parentObj = GetGlobalObject());
 	JSObjectRef CreateFunction(std::string funcName, JSObjectCallAsFunctionCallback callback, JSObjectRef parentObj = GetGlobalObject());

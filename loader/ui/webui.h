@@ -2,6 +2,7 @@
 
 #include <Ultralight/Ultralight.h>
 #include <AppCore/Platform.h>
+#include <JavaScriptCore/JavaScript.h>
 #include <fmt/core.h>
 
 namespace WebUI {
@@ -20,8 +21,10 @@ namespace WebUI {
 	void Init();
 	void InitPlatform();
 	bool IsLoaded();
+	RefPtr<JSContext> AcquireJSContext();
 	void CreateRenderer();
 	void CreateView(std::string file);
+	JSObjectRef GetAPIObject();
 	void RunJS(std::string code);
 	template<typename... T>
 	void ShowNotif(fmt::string_view fomt, T&&... args)

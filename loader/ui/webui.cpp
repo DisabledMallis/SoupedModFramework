@@ -44,6 +44,7 @@ int vy = 0;
 int vw = 640;
 int vh = 480;
 static RefPtr<View> view;
+static JSObjectRef souped = 0;
 
 
 void WebUI::InitPlatform()
@@ -82,6 +83,11 @@ bool WebUI::IsLoaded()
 	return false;
 }
 
+RefPtr<JSContext> WebUI::AcquireJSContext()
+{
+	return view->LockJSContext();
+}
+
 void WebUI::CreateRenderer()
 {
 	///
@@ -113,7 +119,7 @@ void WebUI::CreateView(std::string file)
 	JSContextRef ctx = refCtx->ctx();
 	JSUtils::SetContext(ctx);
 	JSObjectRef global = JSUtils::GetGlobalObject();
-	JSObjectRef souped = JSUtils::CreateObject("souped", global);
+	souped = JSUtils::CreateObject("souped", global);
 	JSObjectRef registerPatcher = JSUtils::CreateFunction("registerPatcher", Patchers::registerPatcher, souped);
 
 	///
@@ -129,6 +135,15 @@ void WebUI::CreateView(std::string file)
 	//Set listener
 	view->set_view_listener(new WebUIListener);
 
+}
+
+JSObjectRef WebUI::GetAPIObject()
+{
+	if (!souped) {
+		::Logger::Print<::Logger::WARNING>("souped JS object was needed, but its currently undefined. Passing undefined instead.");
+		return (JSObjectRef)JSUtils::GetUndefined();
+	}
+	return souped;
 }
 
 void WebUI::RunJS(std::string code)
