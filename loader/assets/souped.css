@@ -1,26 +1,44 @@
-body {
-    background-color: #000000DF;
-    font-family: 'Roboto', sans-serif;
-    color: #FFF;
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&display=swap');
+
+.notifications {
+    position: fixed;
+    bottom: 5px;
+    right: 5px;
 }
 
-.smfLoadNotif {
+.notifications * {
+    transition: all 1s;
 }
 
-.successfulPatches {
-    overflow-x: scroll;
-    overflow-y: scroll;
+.list-move, /* apply transition to moving elements */
+.list-enter-active,
+.list-leave-active {
+    transition: all 0.5s ease;
 }
 
-h1 {
-    font-size: 72px;
-    overflow-wrap: anywhere;
+.list-enter-from,
+.list-leave-to {
+    opacity: 0;
+    transform: translateX(30px);
 }
 
-p {
-    font-size: 24px;
+/* ensure leaving items are taken out of layout flow so that moving
+   animations can be calculated correctly. */
+.list-leave-active {
+    position: absolute;
 }
 
-log {
+li {
+    font-family: 'JetBrains Mono', monospace;
     display: block;
+    background-color: #121212DF;
+    color: white;
+    border-color: #000000;
+    border-style: solid;
+    border-width: 2px;
+    border-radius: 5px;
+    padding: 2px 2px 2px 4px;
+    margin: 2px 2px 2px 2px;
+    width: 350px;
+    height: 75px;
 }

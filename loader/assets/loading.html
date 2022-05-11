@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://unpkg.com/vue@3.2.33/dist/vue.global.prod.js"></script>
+    <div id="app">
+        <transition-group name="list" tag="ul" class="notifications">
+            <li v-for="notif in notifs" :key="notif">{{ notif.message }}</li>
+        </transition-group>
+    </div>
+    </div>
+    <link rel="stylesheet" href="souped.css">
+
+    <script src="souped.js"></script>
+    <script type="module">
+        const { createApp } = Vue
+
+        window.setVueApp = function (vueApp) {
+            window.vueApp = vueApp;
+        }
+
+        window.notif = function (text) {
+            window.vueApp.notif(text);
+        }
+
+        const app = createApp({
+            data() {
+                return {
+                    notifs: []
+                }
+            },
+            created: function () {
+                setVueApp(this);
+                this.notif("DOM Loaded!");
+            },
+            methods: {
+                notif: function (msg) {
+                    this.notifs.unshift({ message: msg });
+                    if (this.notifs.length > 5) {
+                        this.notifs.pop();
+                    }
+                    else {
+                        setTimeout(this.rmNotif, 5 * 1000);
+                    }
+                },
+                rmNotif: function () {
+                    this.notifs.pop();
+                }
+            }
+        }).mount('#app')
+    </script>
+</head>
+</html>

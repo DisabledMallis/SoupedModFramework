@@ -18,6 +18,7 @@
 
 std::stack<std::string> patchworkStack;
 std::mutex patchworkMutex;
+static bool initUi = false;
 
 static PLH::x64Detour* plhDecompressFile;
 static uint64_t oDecompressFile = Memory::FindSig(Soup::Signatures::SIG_ZIPCPP_DECOMPRESSFILE);
@@ -87,6 +88,7 @@ void hkDecryptBytes(uint8_t** bytes) {
 
 static HWND hGameWindow;
 static WNDPROC oWndProc;
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT hkWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	if (!oWndProc) {
 		return 0;
@@ -97,14 +99,15 @@ LRESULT hkWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		WebUI::SetRect(r.left, r.top, r.right - r.left, r.bottom - r.top);
 	}
 
-	WebUI::UpdateLogic();
+	ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
+
+	WebUI::WndProc(hWnd, uMsg, wParam, lParam);
 
 	return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
 }
 
 static PLH::x64Detour* plhSwapBuffers;
 static uint64_t oSwapBuffers;
-static bool initUi = false;
 static HGLRC overlayContext;
 
 bool hkSwapBuffers(HDC hdc, int b) {
@@ -115,7 +118,7 @@ bool hkSwapBuffers(HDC hdc, int b) {
 		WebUI::Init();
 		WebUI::InitPlatform();
 		WebUI::CreateRenderer();
-		WebUI::CreateView();
+		WebUI::CreateView("file:///assets/loading.html");
 
 		hGameWindow = WindowFromDC(hdc);
 		oWndProc = (WNDPROC)SetWindowLongPtr(hGameWindow, GWLP_WNDPROC, (__int3264)(LONG_PTR)hkWndProc);
@@ -128,6 +131,9 @@ bool hkSwapBuffers(HDC hdc, int b) {
 		ImGui::CaptureMouseFromApp();
 
 		initUi = true;
+	}
+
+	if (!initUi || !WebUI::IsLoaded()) {
 		return PLH::FnCast(oSwapBuffers, hkSwapBuffers)(hdc, b);
 	}
 

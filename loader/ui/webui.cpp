@@ -2,6 +2,9 @@
 #include "gl/GPUDriverGL.h"
 #include <logger.h>
 #include <imgui.h>
+#include <Windows.h>
+#include <jsutils.h>
+#include <patchers.h>
 
 using namespace ultralight;
 
@@ -34,6 +37,15 @@ void WebUI::Init()
 static GPUContextGL* gpuContext;
 static GPUDriverGL* gpuDriver;
 static uint32_t renderTarget = 0;
+
+static RefPtr<Renderer> renderer;
+int vx = 0;
+int vy = 0;
+int vw = 640;
+int vh = 480;
+static RefPtr<View> view;
+
+
 void WebUI::InitPlatform()
 {
 	gpuContext = new GPUContextGL(false, false);
@@ -59,12 +71,17 @@ void WebUI::InitPlatform()
 	Platform::instance().set_gpu_driver(gpuDriver);
 }
 
-static RefPtr<Renderer> renderer;
-int vx = 0;
-int vy = 0;
-int vw = 640;
-int vh = 480;
-static RefPtr<View> view;
+bool WebUI::IsLoaded()
+{
+	if (view) {
+		if (view->is_loading()) {
+			return false;
+		}
+		return true;
+	}
+	return false;
+}
+
 void WebUI::CreateRenderer()
 {
 	///
@@ -78,7 +95,7 @@ void WebUI::CreateRenderer()
 	renderer = Renderer::Create();
 }
 
-void WebUI::CreateView()
+void WebUI::CreateView(std::string file)
 {
 	ViewConfig config;
 	config.enable_images = true;
@@ -91,15 +108,40 @@ void WebUI::CreateView()
 	///
 	view = renderer->CreateView(500, 500, config, nullptr);
 
+	//Setup JS Api
+	RefPtr<JSContext> refCtx = view->LockJSContext();
+	JSContextRef ctx = refCtx->ctx();
+	JSUtils::SetContext(ctx);
+	JSObjectRef global = JSUtils::GetGlobalObject();
+	JSObjectRef souped = JSUtils::CreateObject("souped", global);
+	JSObjectRef registerPatcher = JSUtils::CreateFunction("registerPatcher", Patchers::registerPatcher, souped);
+
 	///
 	/// Load a raw string of HTML.
 	///
-	view->LoadURL("file:///assets/souped.html");
+	view->LoadURL(file.c_str());
 
 	///
 	/// Notify the View it has input focus (updates appearance).
 	///
 	view->Focus();
+
+	//Set listener
+	view->set_view_listener(new WebUIListener);
+
+}
+
+void WebUI::RunJS(std::string code)
+{
+	if (!view || view->is_loading()) {
+		::Logger::Print<::Logger::WARNING>("Script tried to execute while view was not loaded!");
+		return;
+	}
+	String exception = "";
+	view->EvaluateScript(code.c_str(), &exception);
+	if (!exception.empty()) {
+		::Logger::Print<::Logger::FAILURE>("Error whilst evaluating script: {}", std::string(exception.utf8().data()));
+	}
 }
 
 void WebUI::SetRect(int x, int y, int w, int h)
@@ -131,6 +173,7 @@ void WebUI::UpdateLogic()
 void WebUI::RenderOneFrame()
 {
 	view->Resize(vw, vh);
+	UpdateLogic();
 
 	///
 	/// Render all active Views (this updates the Surface for each View).
@@ -140,19 +183,9 @@ void WebUI::RenderOneFrame()
 	BitmapSurface* surface = (BitmapSurface*)(view->surface());
 
 	///
-	/// Check if our Surface is dirty (pixels have changed).
+	/// Psuedo-code to upload Surface's bitmap to GPU texture.
 	///
-	if (!surface->dirty_bounds().IsEmpty()) {
-		///
-		/// Psuedo-code to upload Surface's bitmap to GPU texture.
-		///
-		CopyBitmapToTexture(surface->bitmap());
-
-		///
-		/// Clear the dirty bounds.
-		///
-		surface->ClearDirtyBounds();
-	}
+	CopyBitmapToTexture(surface->bitmap());
 
 	if (renderTarget) {
 		DrawTexture(renderTarget, vx, vy, vw, vh, 0);
@@ -177,5 +210,98 @@ void WebUI::DrawTexture(uint32_t texId, float x, float y, float w, float h, floa
 	if (gle != GL_NO_ERROR) {
 		using namespace Logger;
 		::Logger::Print<::Logger::WARNING>("GL Error: {}", gle);
+	}
+}
+
+MouseEvent::Button cur_btn;
+LRESULT WebUI::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	ImGuiIO& io = ImGui::GetIO();
+
+	switch (uMsg) {
+	case WM_KEYDOWN:
+		view->FireKeyEvent(KeyEvent(KeyEvent::kType_RawKeyDown, (uintptr_t)wParam, (intptr_t)lParam, false));
+		break;
+	case WM_KEYUP:
+		view->FireKeyEvent(KeyEvent(KeyEvent::kType_KeyUp, (uintptr_t)wParam, (intptr_t)lParam, false));
+		break;
+	case WM_CHAR:
+		view->FireKeyEvent(KeyEvent(KeyEvent::kType_Char, (uintptr_t)wParam, (intptr_t)lParam, false));
+		break;
+	case WM_MOUSEMOVE: {
+		view->FireMouseEvent({MouseEvent::kType_MouseMoved, (int)io.MousePos.x, (int)io.MousePos.y, cur_btn });
+		break;
+	}
+	case WM_LBUTTONDOWN:
+		WebUI::ShowNotif("Button down");
+	case WM_LBUTTONDBLCLK:
+		cur_btn = MouseEvent::kButton_Left;
+		view->FireMouseEvent({ MouseEvent::kType_MouseDown, (int)io.MousePos.x, (int)io.MousePos.y, cur_btn });
+		break;
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONDBLCLK:
+		cur_btn = MouseEvent::kButton_Left;
+		view->FireMouseEvent({ MouseEvent::kType_MouseDown, (int)io.MousePos.x, (int)io.MousePos.y, cur_btn });
+		break;
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONDBLCLK:
+		cur_btn = MouseEvent::kButton_Left;
+		view->FireMouseEvent({ MouseEvent::kType_MouseDown, (int)io.MousePos.x, (int)io.MousePos.y, cur_btn });
+		break;
+	case WM_LBUTTONUP:
+	case WM_MBUTTONUP:
+	case WM_RBUTTONUP:
+		view->FireMouseEvent({ MouseEvent::kType_MouseUp, (int)io.MousePos.x, (int)io.MousePos.y, cur_btn });
+		cur_btn = MouseEvent::kButton_None;
+		break;
+	case WM_MOUSEWHEEL:
+		view->FireScrollEvent({ ScrollEvent::kType_ScrollByPixel, 0, static_cast<int>(io.MouseWheel * 0.8) });
+		break;
+	}
+	WebUI::UpdateLogic();
+	return TRUE;
+}
+
+inline const char* Stringify(MessageSource source) {
+	switch (source) {
+	case kMessageSource_XML: return "XML";
+	case kMessageSource_JS: return "JS";
+	case kMessageSource_Network: return "Network";
+	case kMessageSource_ConsoleAPI: return "ConsoleAPI";
+	case kMessageSource_Storage: return "Storage";
+	case kMessageSource_AppCache: return "AppCache";
+	case kMessageSource_Rendering: return "Rendering";
+	case kMessageSource_CSS: return "CSS";
+	case kMessageSource_Security: return "Security";
+	case kMessageSource_ContentBlocker: return "ContentBlocker";
+	case kMessageSource_Other: return "Other";
+	default: return "";
+	}
+}
+
+inline const char* Stringify(MessageLevel level) {
+	switch (level) {
+	case kMessageLevel_Log: return "Log";
+	case kMessageLevel_Warning: return "Warning";
+	case kMessageLevel_Error: return "Error";
+	case kMessageLevel_Debug: return "Debug";
+	case kMessageLevel_Info: return "Info";
+	default: return "";
+	}
+}
+
+void WebUI::WebUIListener::OnAddConsoleMessage(View* caller, MessageSource source, MessageLevel level, const String& message, uint32_t line_number, uint32_t column_number, const String& source_id)
+{
+	using namespace Logger;
+	switch (level) {
+	case kMessageLevel_Warning:
+		Print<WARNING>("[{}] @[{}:{}] {}", std::string(Stringify(level)), line_number, column_number, std::string(message.utf8().data()));
+	case kMessageLevel_Error:
+		Print<FAILURE>("[{}] @[{}:{}] {}", std::string(Stringify(level)), line_number, column_number, std::string(message.utf8().data()));
+	case kMessageLevel_Debug:
+	case kMessageLevel_Log:
+	case kMessageLevel_Info:
+	default:
+		Print("[{}] [{}] @[{}:{}] {}", std::string(Stringify(source)), std::string(Stringify(level)), line_number, column_number, std::string(message.utf8().data()));
 	}
 }

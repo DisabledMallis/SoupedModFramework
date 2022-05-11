@@ -9,13 +9,11 @@
  * 
  */
 
-//By default, SMF specified console.print instead of console.log (because in C++ 'log' refers to the mathematical function)
-console.log = console.print;
 console.log("Welcome to souped.js!");
 
 //Patcher helper functions
-function createJsonPatcher(callback, filename) {
-    patchers.registerPatcher((name, data) => {
+souped.registerJsonPatcher = function(callback, filename) {
+    souped.registerPatcher((name, data) => {
         var dataObj = JSON.parse(data);
         var { successful, data } = callback(dataObj);
         if (successful) {
@@ -57,4 +55,4 @@ function dartPatch(data) {
     return { successful: true, data: data };
 }
 
-createJsonPatcher(dartPatch, "dart_monkey.tower_blueprint");
+souped.registerJsonPatcher(dartPatch, "dart_monkey.tower_blueprint");
