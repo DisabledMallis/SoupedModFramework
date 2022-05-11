@@ -6,26 +6,29 @@
 std::vector<std::function<bool(std::string, std::string&)>> patcherList;
 
 jsfunction(Patchers::registerPatcher) {
+	JSValueRef patcherId = JSUtils::GetUndefined();
 	if (jsargc == 2) {
 		JSObjectRef jsCallback = (JSObjectRef)jsargv[0];
 		
 		if (!jsCallback) {
 			Logger::Print<Logger::WARNING>("Attemped to register a patcher with no callback");
-			return 0;
+			return patcherId;
 		}
 		if (JSValueIsUndefined(JSUtils::GetContext(), jsCallback)) {
 			Logger::Print<Logger::WARNING>("Attemped to register a patcher, but the callback is undefined. Did the callback get GC'd?");
-			return 0;
+			return patcherId;
 		}
 		if (!JSValueIsObject(JSUtils::GetContext(), jsCallback)) {
 			Logger::Print<Logger::WARNING>("Attemped to register a patcher, but the callback is not an object (and as a result cannot be a function). Did we get GC'd?");
-			return 0;
+			return patcherId;
 		}
 
+		//Somehow need to unprotect the value when the patcher is destroyed.
+		//May be a good idea to make a patcher struct instead of just a function callback?
+		//Either way, TODO: fix
 		JSValueProtect(JSUtils::GetContext(), jsCallback);
 
 		std::string targetFile = JSUtils::GetString((JSStringRef)jsargv[1]);
-		Logger::Print("Target file: {}", targetFile);
 		std::function<bool(std::string, std::string&)> patchInvoker = [jsCallback, targetFile](std::string fileName, std::string& fileContent)->bool {
 			//Acquire JS context from WebUI
 			ultralight::RefPtr<ultralight::JSContext> ctxRef = WebUI::AcquireJSContext();
@@ -79,19 +82,21 @@ jsfunction(Patchers::registerPatcher) {
 			}
 
 			fileContent = patchResult;
-			Logger::Print("fileContent: {}", fileContent);
 			return success;
 		};
-		Patchers::RegisterPatcher(patchInvoker);
+		size_t id = Patchers::RegisterPatcher(patchInvoker);
+		patcherId = JSValueMakeNumber(JSUtils::GetContext(), id);
+		return patcherId;
 	}
 	else {
 		Logger::Print<Logger::FAILURE>("souped.registerPatcher called with the incorrect number of arguments");
 	}
-	return 0;
+	return patcherId;
 }
 
 size_t Patchers::RegisterPatcher(std::function<bool(std::string, std::string&)> patcher) {
 	patcherList.push_back(patcher);
+
 	return patcherList.size() - 1;
 };
 

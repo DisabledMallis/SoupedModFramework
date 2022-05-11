@@ -311,12 +311,15 @@ void WebUI::WebUIListener::OnAddConsoleMessage(View* caller, MessageSource sourc
 	switch (level) {
 	case kMessageLevel_Warning:
 		Print<WARNING>("[{}] @[{}:{}] {}", std::string(Stringify(level)), line_number, column_number, std::string(message.utf8().data()));
+		break;
 	case kMessageLevel_Error:
 		Print<FAILURE>("[{}] @[{}:{}] {}", std::string(Stringify(level)), line_number, column_number, std::string(message.utf8().data()));
+		break;
 	case kMessageLevel_Debug:
 	case kMessageLevel_Log:
 	case kMessageLevel_Info:
 	default:
 		Print("[{}] [{}] @[{}:{}] {}", std::string(Stringify(source)), std::string(Stringify(level)), line_number, column_number, std::string(message.utf8().data()));
+		break;
 	}
 }
