@@ -4,6 +4,7 @@
 #include <AppCore/Platform.h>
 #include <JavaScriptCore/JavaScript.h>
 #include <fmt/core.h>
+#include <shared_thread.h>
 
 namespace WebUI {
 	using namespace ultralight;
@@ -38,6 +39,7 @@ namespace WebUI {
 	void UpdateLogic();
 	void RenderOneFrame();
 	void DrawTexture(uint32_t texId, float x, float y, float w, float h, float angle);
+	shared_thread& GetThread();
 
 	LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 };

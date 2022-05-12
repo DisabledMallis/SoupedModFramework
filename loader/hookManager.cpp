@@ -15,6 +15,8 @@
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_win32.h>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 std::stack<std::string> patchworkStack;
 std::mutex patchworkMutex;
@@ -115,10 +117,17 @@ bool hkSwapBuffers(HDC hdc, int b) {
 	if (!initUi) {
 		overlayContext = wglCreateContext(hdc);
 
+		if (glfwInit() != GLFW_TRUE) {
+			MessageBoxA(0, "SoupedModFramework couldn't initialize GLFW, and as a result it must exit", "GLFW Error", MB_OK);
+			exit(0);
+		}
+		gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+		gladLoadGL();
+
 		WebUI::Init();
 		WebUI::InitPlatform();
 		WebUI::CreateRenderer();
-		WebUI::CreateView("file:///assets/souped.html");
+		WebUI::CreateView("file://./assets/souped.html");
 
 		hGameWindow = WindowFromDC(hdc);
 		oWndProc = (WNDPROC)SetWindowLongPtr(hGameWindow, GWLP_WNDPROC, (__int3264)(LONG_PTR)hkWndProc);
