@@ -248,7 +248,6 @@ LRESULT WebUI::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		break;
 	}
 	case WM_LBUTTONDOWN:
-		WebUI::ShowNotif("Button down");
 	case WM_LBUTTONDBLCLK:
 		cur_btn = MouseEvent::kButton_Left;
 		view->FireMouseEvent({ MouseEvent::kType_MouseDown, (int)io.MousePos.x, (int)io.MousePos.y, cur_btn });

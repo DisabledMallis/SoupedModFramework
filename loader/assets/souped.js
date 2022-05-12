@@ -47,7 +47,6 @@ function dartPatch(data) {
         var currentNode = towerNodes[i];
         if (currentNode["id"] == 0) {
             currentNode["cost"] = 0;
-            window.notif("DartMonkey patched!");
             console.warn("DartMonkey patch successfully!");
         }
         towerNodes[i] = currentNode;

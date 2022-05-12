@@ -3,8 +3,9 @@ add_library(Loader SHARED)
 target_sources(Loader PRIVATE
 	"hookManager.cpp"
 	"main.cpp"
- )
+  "patcher/patchers/BattleMenuPatcher.h" "patcher/patchers/BattleMenuPatcher.cpp")
 
+add_subdirectory(assets)
 add_subdirectory(dumper)
 add_subdirectory(patcher)
 add_subdirectory(ui)

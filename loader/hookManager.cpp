@@ -118,7 +118,7 @@ bool hkSwapBuffers(HDC hdc, int b) {
 		WebUI::Init();
 		WebUI::InitPlatform();
 		WebUI::CreateRenderer();
-		WebUI::CreateView("file:///assets/loading.html");
+		WebUI::CreateView("file:///assets/souped.html");
 
 		hGameWindow = WindowFromDC(hdc);
 		oWndProc = (WNDPROC)SetWindowLongPtr(hGameWindow, GWLP_WNDPROC, (__int3264)(LONG_PTR)hkWndProc);
