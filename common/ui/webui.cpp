@@ -124,8 +124,7 @@ void WebUI::CreateView(std::string url)
 		view->set_view_listener(new WebUIViewListener);
 		view->set_load_listener(new WebUILoadListener);
 
-		//view->LoadURL(url.c_str());
-		view->LoadHTML("<h1>Test</h1>");
+		view->LoadURL(url.c_str());
 
 		//Setup JS Api
 		RefPtr<JSContext> refCtx = view->LockJSContext();
@@ -186,39 +185,40 @@ void WebUI::CopyBitmapToTexture(RefPtr<Bitmap> bitmap)
 void WebUI::UpdateLogic()
 {
 	webuiThread.DoWork([]() {
-		if(renderer)
+		if (renderer) {
 			renderer->Update();
+		}
 	});
+	webuiThread.AwaitCompletion();
 }
 
 void WebUI::RenderOneFrame()
 {
+	if (!renderer) {
+		return;
+	}
+	if (!view) {
+		return;
+	}
+
+	///
+	/// Render all active Views (this updates the Surface for each View).
+	///
 	webuiThread.DoWork([]() {
-		if (!renderer) {
-			return;
-		}
-		if (!view) {
-			return;
-		}
-		view->Resize(vw, vh);
-
-		///
-		/// Render all active Views (this updates the Surface for each View).
-		///
 		renderer->Render();
-
-		BitmapSurface* surface = (BitmapSurface*)(view->surface());
-
-		///
-		/// Psuedo-code to upload Surface's bitmap to GPU texture.
-		///
-		CopyBitmapToTexture(surface->bitmap());
-
-		if (renderTarget) {
-			DrawTexture(renderTarget, vx, vy, vw, vh, 0);
-		}
 	});
 	webuiThread.AwaitCompletion();
+
+	BitmapSurface* surface = (BitmapSurface*)(view->surface());
+
+	///
+	/// Psuedo-code to upload Surface's bitmap to GPU texture.
+	///
+	CopyBitmapToTexture(surface->bitmap());
+
+	if (renderTarget) {
+		DrawTexture(renderTarget, vx, vy, vw, vh, 0);
+	}
 }
 	
 
@@ -292,8 +292,9 @@ LRESULT WebUI::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			view->FireScrollEvent({ ScrollEvent::kType_ScrollByPixel, 0, static_cast<int>(io.MouseWheel * 0.8) });
 			break;
 		}
+		view->Resize(vw, vh);
 	});
-	
+	webuiThread.AwaitCompletion();
 	WebUI::UpdateLogic();
 	return TRUE;
 }
