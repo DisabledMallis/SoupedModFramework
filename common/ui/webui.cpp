@@ -20,7 +20,6 @@ void WebUI::Init()
 		/// load our bundled SSL certificates to make HTTPS requests.
 		///
 		config.resource_path_prefix = "./assets/resources/";
-
 		config.num_renderer_threads = 4;
 
 		///
@@ -125,7 +124,8 @@ void WebUI::CreateView(std::string url)
 		view->set_view_listener(new WebUIViewListener);
 		view->set_load_listener(new WebUILoadListener);
 
-		view->LoadURL(url.c_str());
+		//view->LoadURL(url.c_str());
+		view->LoadHTML("<h1>Test</h1>");
 
 		//Setup JS Api
 		RefPtr<JSContext> refCtx = view->LockJSContext();

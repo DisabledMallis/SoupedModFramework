@@ -9,7 +9,10 @@ shared_thread::shared_thread(int timeoutMillis)
 		while (true) {
 			if (!this->WorkCompleted()) {
 				auto job = this->NextJob();
-				job();
+				if (job)
+					job();
+				else
+					Logger::Print<Logger::WARNING>("The next job was null, skipping...");
 				this->workQueue.pop_front();
 			}
 			else {
@@ -51,4 +54,5 @@ std::function<void()> shared_thread::NextJob() {
 	if (!this->WorkCompleted()) {
 		return this->workQueue.front();
 	}
+	return 0;
 }
