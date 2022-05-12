@@ -2,9 +2,11 @@ include(ExternalProject)
 
 add_library(Common SHARED)
 
-add_subdirectory(utils)
+add_subdirectory(glad)
 add_subdirectory(imgui)
 add_subdirectory(src)
+add_subdirectory(ui)
+add_subdirectory(utils)
 
 set(SDK_ROOT "${CMAKE_BINARY_DIR}/SDK/")
 set(ULTRALIGHT_INCLUDE_DIR "${SDK_ROOT}/include")
@@ -26,7 +28,7 @@ ExternalProject_Add(UltralightSDK
 
 target_include_directories(Common PRIVATE "${ULTRALIGHT_INCLUDE_DIR}")
 target_link_directories(Common PRIVATE "${ULTRALIGHT_LIBRARY_DIR}")
-target_link_libraries(Common PRIVATE fmt UltralightCore AppCore Ultralight WebCore)
+target_link_libraries(Common PRIVATE fmt UltralightCore AppCore Ultralight WebCore glfw)
 
 # Add target to build dir
 add_custom_command(

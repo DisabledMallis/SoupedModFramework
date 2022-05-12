@@ -1,6 +1,6 @@
 #include <patchers.h>
 #include <logger.h>
-#include "../ui/webui.h"
+#include <webui.h>
 
 //success(filename, data)
 std::vector<Patchers::Patcher*> patcherList;

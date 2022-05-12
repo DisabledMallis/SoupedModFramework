@@ -1,5 +1,6 @@
 #include "jsutils.h"
 #include <logger.h>
+#include <vector>
 
 static JSContextRef currentContext = 0;
 void JSUtils::SetContext(JSContextRef ctx) {
@@ -8,6 +9,29 @@ void JSUtils::SetContext(JSContextRef ctx) {
 
 JSContextRef JSUtils::GetContext() {
 	return currentContext;
+}
+
+static JSObjectRef apiObj;
+static std::vector<std::function<void()>> featureLoaders;
+void JSUtils::SetupAPI() {
+	JSObjectRef global = JSUtils::GetGlobalObject();
+	apiObj = JSUtils::CreateObject("souped", global);
+	for (auto apiFeature : featureLoaders) {
+		apiFeature();
+	}
+	Logger::Print<Logger::SUCCESS>("Initialized Souped API!");
+}
+
+void JSUtils::OnAPISetup(std::function<void()> callback) {
+	featureLoaders.push_back(callback);
+}
+
+JSObjectRef JSUtils::GetAPIObject() {
+	if (!apiObj) {
+		Logger::Print<Logger::WARNING>("Api was requested before initialization");
+		return 0;
+	}
+	return apiObj;
 }
 
 JSObjectRef JSUtils::GetGlobalObject()
@@ -97,5 +121,6 @@ JSObjectRef JSUtils::CreateFunction(std::string funcName, JSObjectCallAsFunction
 	JSStringRef jsFuncStr = JSStringCreateWithUTF8CString(funcName.c_str());
 	JSObjectRef func = JSObjectMakeFunctionWithCallback(currentContext, jsFuncStr, callback);
 	JSObjectSetProperty(currentContext, parentObj, jsFuncStr, func, 0, 0);
+	JSStringRelease(jsFuncStr);
 	return func;
 }

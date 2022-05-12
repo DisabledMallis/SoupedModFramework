@@ -106,38 +106,22 @@ void Launcher::OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_m
     ///
     /// This is the best time to setup any JavaScript bindings.
     ///
+    
     //Get the JS context
     RefPtr<JSContext> context = caller->LockJSContext();
 
     // Get the JSC api
     JSContext* ctx = context.get();
-
-    //Create a JS string for the func name
-    JSStringRef name = JSStringCreateWithUTF8CString("nativeLaunch");
+    JSUtils::SetContext(ctx->ctx());
 
     //Create a JS function that binds to the native function
-    JSObjectRef func = JSObjectMakeFunctionWithCallback(*ctx, name, NativeLaunch);
-
-    //Get the global js object (window)
-    JSObjectRef globalObj = JSContextGetGlobalObject(*ctx);
-
-    //Store func in pages global object so it can be accessed from JS
-    JSObjectSetProperty(*ctx, globalObj, name, func, 0, 0);
-
-    //Delete the js string we no longer need
-    JSStringRelease(name);
+    JSObjectRef func = JSUtils::CreateFunction("nativeLaunch", NativeLaunch);
     
     //areWeNative() JavaScript function definition
-    JSStringRef sAreWeNative = JSStringCreateWithUTF8CString("areWeNative");
-    JSObjectRef fAreWeNative = JSObjectMakeFunctionWithCallback(*ctx, sAreWeNative, AreWeNative);
-    JSObjectSetProperty(*ctx, globalObj, sAreWeNative, fAreWeNative, 0, 0);
-    JSStringRelease(sAreWeNative);
+    JSUtils::CreateFunction("areWeNative", AreWeNative);
 
     //nativeSetOption(settingId, value) JavaScript function definition
-    JSStringRef sNativeSetOption = JSStringCreateWithUTF8CString("nativeSetOption");
-    JSObjectRef fNativeSetOption = JSObjectMakeFunctionWithCallback(*ctx, sNativeSetOption, NativeSetOption);
-    JSObjectSetProperty(*ctx, globalObj, sNativeSetOption, fNativeSetOption, 0, 0);
-    JSStringRelease(sNativeSetOption);
+    JSUtils::CreateFunction("nativeSetOption", NativeSetOption);
 }
 
 void Launcher::OnChangeCursor(ultralight::View* caller, Cursor cursor) {

@@ -8,7 +8,6 @@ target_sources(Loader PRIVATE
 add_subdirectory(assets)
 add_subdirectory(dumper)
 add_subdirectory(patcher)
-add_subdirectory(ui)
 
 set(SDK_ROOT "${CMAKE_BINARY_DIR}/SDK/")
 set(ULTRALIGHT_INCLUDE_DIR "${SDK_ROOT}/include")

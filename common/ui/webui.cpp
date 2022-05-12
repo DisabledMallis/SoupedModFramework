@@ -1,4 +1,4 @@
-#include "webui.h"
+#include <webui.h>
 #include "gl/GPUDriverGL.h"
 #include <logger.h>
 #include <imgui.h>
@@ -32,16 +32,16 @@ void WebUI::Init()
 	webuiThread.AwaitCompletion();
 }
 
-static GPUContextGL* gpuContext;
-static GPUDriverGL* gpuDriver;
+static GPUContextGL* gpuContext = 0;
+static GPUDriverGL* gpuDriver = 0;
 static uint32_t renderTarget = 0;
 
-static RefPtr<Renderer> renderer;
+static RefPtr<Renderer> renderer = nullptr;
 int vx = 0;
 int vy = 0;
 int vw = 640;
 int vh = 480;
-static RefPtr<View> view;
+static RefPtr<View> view = nullptr;
 static JSObjectRef souped = 0;
 
 
@@ -77,10 +77,12 @@ bool WebUI::IsLoaded()
 {
 	if (view) {
 		if (view->is_loading()) {
+			::Logger::Print<::Logger::WARNING>("View is loading");
 			return false;
 		}
 		return true;
 	}
+	::Logger::Print<::Logger::WARNING>("View is null");
 	return false;
 }
 
@@ -105,9 +107,9 @@ void WebUI::CreateRenderer()
 	webuiThread.AwaitCompletion();
 }
 
-void WebUI::CreateView(std::string file)
+void WebUI::CreateView(std::string url)
 {
-	webuiThread.DoWork([file]() {
+	webuiThread.DoWork([&]() {
 		ViewConfig config;
 		config.enable_images = true;
 		config.enable_javascript = true;
@@ -119,26 +121,22 @@ void WebUI::CreateView(std::string file)
 		///
 		view = renderer->CreateView(500, 500, config, nullptr);
 
+		//Set listener
+		view->set_view_listener(new WebUIViewListener);
+		view->set_load_listener(new WebUILoadListener);
+
+		view->LoadURL(url.c_str());
+
 		//Setup JS Api
 		RefPtr<JSContext> refCtx = view->LockJSContext();
 		JSContextRef ctx = refCtx->ctx();
 		JSUtils::SetContext(ctx);
-		JSObjectRef global = JSUtils::GetGlobalObject();
-		souped = JSUtils::CreateObject("souped", global);
-		JSObjectRef registerPatcher = JSUtils::CreateFunction("registerPatcher", Patchers::registerPatcher, souped);
-
-		///
-		/// Load a raw string of HTML.
-		///
-		view->LoadURL(file.c_str());
+		JSUtils::SetupAPI();
 
 		///
 		/// Notify the View it has input focus (updates appearance).
 		///
 		view->Focus();
-
-		//Set listener
-		view->set_view_listener(new WebUIListener);
 	});
 	webuiThread.AwaitCompletion();
 }
@@ -187,18 +185,22 @@ void WebUI::CopyBitmapToTexture(RefPtr<Bitmap> bitmap)
 
 void WebUI::UpdateLogic()
 {
-	///
-	/// Give the library a chance to handle any pending tasks and timers.
-	///
-	///
-	renderer->Update();
+	webuiThread.DoWork([]() {
+		if(renderer)
+			renderer->Update();
+	});
 }
 
 void WebUI::RenderOneFrame()
 {
 	webuiThread.DoWork([]() {
+		if (!renderer) {
+			return;
+		}
+		if (!view) {
+			return;
+		}
 		view->Resize(vw, vh);
-		UpdateLogic();
 
 		///
 		/// Render all active Views (this updates the Surface for each View).
@@ -324,7 +326,7 @@ inline const char* Stringify(MessageLevel level) {
 	}
 }
 
-void WebUI::WebUIListener::OnAddConsoleMessage(View* caller, MessageSource source, MessageLevel level, const String& message, uint32_t line_number, uint32_t column_number, const String& source_id)
+void WebUI::WebUIViewListener::OnAddConsoleMessage(View* caller, MessageSource source, MessageLevel level, const String& message, uint32_t line_number, uint32_t column_number, const String& source_id)
 {
 	using namespace Logger;
 	switch (level) {

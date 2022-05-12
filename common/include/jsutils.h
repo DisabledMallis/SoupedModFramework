@@ -2,6 +2,7 @@
 
 #include <JavaScriptCore/JavaScript.h>
 #include <string>
+#include <functional>
 
 #define jsfunction(funcName) JSValueRef funcName(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
 #define jsargc argumentCount
@@ -11,6 +12,9 @@
 namespace JSUtils {
 	void SetContext(JSContextRef ctx);
 	JSContextRef GetContext();
+	void SetupAPI();
+	void OnAPISetup(std::function<void()> callback);
+	JSObjectRef GetAPIObject();
 	JSObjectRef GetGlobalObject();
 	JSStringRef CreateString(std::string text);
 	std::string GetString(JSStringRef text);

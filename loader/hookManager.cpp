@@ -11,7 +11,7 @@
 #include <Windows.h>
 #include <stack>
 #include <polyhook2/Detour/x64Detour.hpp>
-#include "ui/webui.h"
+#include <webui.h>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_win32.h>
@@ -127,7 +127,7 @@ bool hkSwapBuffers(HDC hdc, int b) {
 		WebUI::Init();
 		WebUI::InitPlatform();
 		WebUI::CreateRenderer();
-		WebUI::CreateView("file://./assets/souped.html");
+		WebUI::CreateView("file:///assets/souped.html");
 
 		hGameWindow = WindowFromDC(hdc);
 		oWndProc = (WNDPROC)SetWindowLongPtr(hGameWindow, GWLP_WNDPROC, (__int3264)(LONG_PTR)hkWndProc);
