@@ -10,8 +10,10 @@
     "tauri:serve": "vue-cli-service tauri:serve"
   },
   "dependencies": {
+    "@tauri-apps/api": "^1.0.0-rc.5",
     "core-js": "^3.8.3",
-    "vue": "^3.2.13"
+    "vue": "^3.2.13",
+    "vue3-spinners": "^1.1.1"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",

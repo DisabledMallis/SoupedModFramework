@@ -9,18 +9,58 @@
 		<div class="footer">
 			<LaunchButton />
 		</div>
+		<div class="infoOverlay">
+			<a>Launcher: {{ launcherVersion }}</a>
+			<a>Tauri: {{ tauriVersion }}</a>
+		</div>
+		<div class="notifOverlay">
+			<TransitionGroup name="list">
+			<LNotif v-for="notif in notifications"
+				:key="notif.key"
+				:notifMessage="notif.message"
+				:notifType="notif.type"/>
+			</TransitionGroup>
+		</div>
 	</div>
 </template>
 
 <script>
 import LSettings from "./components/LSettings.vue";
 import LaunchButton from "./components/LaunchButton.vue";
+import LNotif from "./components/LNotif.vue";
+const tauriApp = window.__TAURI__.app;
 
 export default {
 	name: "App",
+	data() {
+		return {
+			tauriVersion: "",
+			launcherVersion: "pre-0.1",
+			notifications: [],
+			nextNotifKey: 0
+		}
+	},
 	components: {
 		LSettings,
-		LaunchButton
+		LaunchButton,
+		LNotif
+	},
+	methods: {
+		notify(text, ntype) {
+			this.notifications.unshift({
+				message: text,
+				type: ntype,
+				key: this.nextNotifKey
+			});
+			this.nextNotifKey++;
+			setTimeout(()=>{
+				this.notifications.pop();
+			}, 5*1000);
+		}
+	},
+	async mounted() {
+		this.tauriVersion = await tauriApp.getTauriVersion();
+		window.notify = this.notify;
 	}
 };
 </script>
@@ -37,6 +77,7 @@ export default {
 html {
 	background-color: var(--border-color);
 	font-family: "JetBrains Mono", monospace;
+	overflow: hidden;
 }
 .appContainer {
 	border-style: solid;
@@ -74,5 +115,36 @@ html {
 	grid-column-end: 4;
 	align-content: center;
 	justify-content: center;
+}
+.infoOverlay {
+	position: absolute;
+	display: grid;
+	bottom: 20px;
+	left: 20px;
+}
+.notifOverlay {
+	position: absolute;
+	display: grid;
+	bottom: 20px;
+	right: 20px;
+	max-height: 90vh;
+}
+
+.list-move, /* apply transition to moving elements */
+.list-enter-active,
+.list-leave-active {
+	transition: all 0.5s ease;
+}
+
+.list-enter-from,
+.list-leave-to {
+	opacity: 0;
+	transform: translateX(20px);
+}
+
+/* ensure leaving items are taken out of layout flow so that moving
+   animations can be calculated correctly. */
+.list-leave-active {
+	position: absolute;
 }
 </style>

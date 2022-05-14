@@ -7,7 +7,8 @@
     "distDir": "Set automatically by Vue CLI plugin",
     "devPath": "Set automatically by Vue CLI plugin",
     "beforeDevCommand": "",
-    "beforeBuildCommand": ""
+    "beforeBuildCommand": "",
+	"withGlobalTauri": true
   },
   "tauri": {
     "bundle": {
@@ -54,7 +55,7 @@
         "title": "Souped Launcher",
         "width": 620,
         "height": 480,
-        "minWidth": 380,
+        "minWidth": 500,
         "minHeight": 185,
         "resizable": true,
         "fullscreen": false
