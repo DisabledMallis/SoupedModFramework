@@ -28,8 +28,14 @@ export default {
 <style>
 @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&display=swap");
 
+:root {
+	--border-color: #282828;
+	--bg-color: #121212;
+	--fg-color: #dfdfdf;
+}
+
 html {
-	background-color: #282828;
+	background-color: var(--border-color);
 	font-family: "JetBrains Mono", monospace;
 }
 .appContainer {
@@ -39,11 +45,11 @@ html {
 	width: calc(100vw - 20px);
 	height: calc(100vh - 20px);
 	box-shadow: inset 0 0 10px #000000;
-	background-color: #121212;
+	background-color: var(--bg-color);
 	display: grid;
 	grid-auto-rows: 5;
 	grid-auto-columns: 5;
-	color: #dfdfdf;
+	color: var(--fg-color);
 }
 .header {
 	display: grid;
