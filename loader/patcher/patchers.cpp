@@ -119,9 +119,12 @@ bool Patchers::JSPatcher::DoPatchwork(std::string fileName, std::string& fileCon
 	shared_thread& uiThread = WebUI::GetThread();
 	JSValueRef result;
 	uiThread.DoWork([&]() {
+		Logger::Print("Invoking patcher callback");
 		result = JSUtils::CallFunction(jsCallback, 0, jsArgs, 2);
+		Logger::Print("Patcher callback invoked");
 	});
 	uiThread.AwaitCompletion();
+	Logger::Print("Patcher completed");
 
 	if (!JSValueIsObject(JSUtils::GetContext(), result)) {
 		Logger::Print<Logger::WARNING>("JS Patcher callback did NOT return an object! Ignoring patch...");
