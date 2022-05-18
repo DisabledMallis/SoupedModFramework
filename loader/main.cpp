@@ -6,6 +6,7 @@
 #include <ipc.h>
 #include <SoupSTL.h>
 #include "patcher/patchers/BattleMenuPatcher.h"
+#include <stdjs.h>
 
 static PLH::x64Detour* plhwWinMain;
 static uint64_t owWinMain;
@@ -34,11 +35,31 @@ int __stdcall hkwWinMain(
 	int retval = system("taskkill /F /T /IM launcher.exe");
 	Logger::Print("Launcher killed & pipe closed");
 
+	//Set up basic JS funcs
 	JSUtils::OnInitialize([]() {
-		JSUtils::JsValue souped("souped");
-		JSUtils::JsValue jsRegisterPatcher("registerPatcher", (JsNativeFunction)Patchers::registerPatcher, souped);
-		Logger::Print("Register Patcher added to souped JS");
+		JSUtils::JsValue& global = JSUtils::GetGlobalObject();
+		global["console"] = JSUtils::JsValue("console", true);
+
+		global["console"]["print"] = JSUtils::JsValue((JsNativeFunction)StdJs::print<Logger::DEFAULT>);
+		global["console"]["info"] = JSUtils::JsValue((JsNativeFunction)StdJs::info);
+		global["console"]["log"] = JSUtils::JsValue((JsNativeFunction)StdJs::log);
+		global["console"]["warn"] = JSUtils::JsValue((JsNativeFunction)StdJs::warn);
+		global["console"]["error"] = JSUtils::JsValue((JsNativeFunction)StdJs::error);
+
+		Logger::Print("Added missing default JS functions");
 	});
+	//Set up souped api
+	JSUtils::OnInitialize([]() {
+		JSUtils::JsValue souped("souped", true);
+		JSUtils::JsValue jsRegisterPatcher("registerPatcher", (JsNativeFunction)Patchers::registerPatcher);
+		souped["registerPatcher"] = jsRegisterPatcher;
+		Logger::Print("souped API ready");
+
+		//Run the souped.js file
+		JSUtils::RunFile("./scripts/souped.js");
+	});
+	//Create the runtime & do all init work
+	JSUtils::SetupRuntime();
 
 	BattleMenuPatcher* battleMenuPatcher = new BattleMenuPatcher();
 	Patchers::RegisterPatcher(battleMenuPatcher);

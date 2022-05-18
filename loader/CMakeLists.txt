@@ -3,7 +3,7 @@ add_library(Loader SHARED)
 target_sources(Loader PRIVATE
 	"hookManager.cpp"
 	"main.cpp"
-  "patcher/patchers/BattleMenuPatcher.h" "patcher/patchers/BattleMenuPatcher.cpp")
+)
 
 add_subdirectory(dumper)
 add_subdirectory(patcher)
@@ -26,4 +26,7 @@ add_custom_command(
 	COMMAND ${CMAKE_COMMAND} -E copy
 		${CMAKE_BINARY_DIR}/loader/Loader.dll
 		${FINAL_DIR}/loaders/Loader.dll
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		${CMAKE_CURRENT_LIST_DIR}/scripts
+		${FINAL_DIR}/scripts
 )

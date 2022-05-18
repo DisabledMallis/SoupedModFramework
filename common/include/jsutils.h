@@ -3,9 +3,10 @@
 #include <ChakraCore.h>
 #include <string>
 #include <functional>
+#include <filesystem>
 
 #define jsfunction(funcName) JsValueRef CALLBACK funcName(JsValueRef callee, bool isConstructCall, JsValueRef* arguments, short argumentCount, void *callbackState)
-#define jsargc argumentCount
+#define jsargc argumentCount-1
 #define jsargv arguments
 
 namespace JSUtils {
@@ -22,7 +23,7 @@ namespace JSUtils {
 
 	/*Interop*/
 	class JsValue;
-	JsValue GetGlobalObject();
+	JsValue& GetGlobalObject();
 
 	class JsValue {
 		JsValueRef internalRef;
@@ -30,10 +31,12 @@ namespace JSUtils {
 		JsValue();
 		JsValue(int);
 		JsValue(JsValueRef valRef);
-		JsValue(std::string, JsValue parentObj = GetGlobalObject());
-		JsValue(std::string name, JsNativeFunction func, JsValue parentObj = GetGlobalObject());
+		JsValue(std::string text);
+		JsValue(std::string objName, bool isObject);
+		JsValue(JsNativeFunction);
 		JsValueRef* GetInternalRef();
 		virtual bool IsValid();
+		bool HasProperty(std::string propName);
 		operator bool();
 		operator int();
 		operator double();
@@ -45,8 +48,8 @@ namespace JSUtils {
 		void operator=(std::string);
 		std::string cpp_str();
 		operator std::string();
-		JsValue operator[](const char*);
-		JsValue operator[](std::string);
+		JsValue& operator[](const char*);
+		JsValue& operator[](std::string);
 		template<typename... T>
 		JsValue operator()(T... argv) {
 			constexpr size_t argc = sizeof...(argv);
@@ -64,5 +67,6 @@ namespace JSUtils {
 		}
 	};
 
-	JsValue RunScript(std::string name, std::string code);
+	JsValue RunCode(std::string name, std::string code);
+	JsValue RunFile(std::filesystem::path file);
 };
