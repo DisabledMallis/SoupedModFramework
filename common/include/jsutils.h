@@ -1,26 +1,68 @@
 #pragma once
 
-#include <JavaScriptCore/JavaScript.h>
+#include <ChakraCore.h>
 #include <string>
 #include <functional>
 
-#define jsfunction(funcName) JSValueRef funcName(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
+#define jsfunction(funcName) JsValueRef CALLBACK funcName(JsValueRef callee, bool isConstructCall, JsValueRef* arguments, short argumentCount, void *callbackState)
 #define jsargc argumentCount
 #define jsargv arguments
-#define undefined JSUtils::GetUndefined()
 
 namespace JSUtils {
-	void SetContext(JSContextRef ctx);
-	JSContextRef GetContext();
-	void SetupAPI();
-	void OnAPISetup(std::function<void()> callback);
-	JSObjectRef GetAPIObject();
-	JSObjectRef GetGlobalObject();
-	JSStringRef CreateString(std::string text);
-	std::string GetString(JSStringRef text);
-	JSValueRef GetUndefined();
-	JSValueRef CallFunction(JSObjectRef func, JSObjectRef thisPtr, const JSValueRef* argv, int argc);
-	JSValueRef ReadProperty(JSObjectRef obj, std::string prop);
-	JSObjectRef CreateObject(std::string objectName, JSObjectRef parentObj = GetGlobalObject());
-	JSObjectRef CreateFunction(std::string funcName, JSObjectCallAsFunctionCallback callback, JSObjectRef parentObj = GetGlobalObject());
+	/* Runtime functions */
+	void SetupRuntime();
+	void OnInitialize(std::function<void()>);
+	void DestroyRuntime();
+
+	/* Context functions */
+	JsContextRef MakeContext();
+	JsContextRef GetDefaultContext();
+	JsContextRef GetCurrentContext();
+	void SetCurrentContext(JsContextRef ctx);
+
+	/*Interop*/
+	class JsValue;
+	JsValue GetGlobalObject();
+
+	class JsValue {
+		JsValueRef internalRef;
+	public:
+		JsValue();
+		JsValue(int);
+		JsValue(JsValueRef valRef);
+		JsValue(std::string, JsValue parentObj = GetGlobalObject());
+		JsValue(std::string name, JsNativeFunction func, JsValue parentObj = GetGlobalObject());
+		JsValueRef* GetInternalRef();
+		virtual bool IsValid();
+		operator bool();
+		operator int();
+		operator double();
+		operator JsValueRef();
+		void operator=(bool);
+		void operator=(int);
+		void operator=(double);
+		void operator=(JsValueRef);
+		void operator=(std::string);
+		std::string cpp_str();
+		operator std::string();
+		JsValue operator[](const char*);
+		JsValue operator[](std::string);
+		template<typename... T>
+		JsValue operator()(T... argv) {
+			constexpr size_t argc = sizeof...(argv);
+			JsValueRef args[argc];
+			int i = 0;
+			([&](auto& arg)
+				{
+					args[i] = JsValue(arg).GetInternalRef();
+					i++;
+				} (argv), ...);
+			JsValue resultVal;
+			JsErrorCode jsErrC = JsCallFunction(this->GetInternalRef(), args, argc, resultVal.GetInternalRef());
+			//TODO: Error handling
+			return resultVal;
+		}
+	};
+
+	JsValue RunScript(std::string name, std::string code);
 };

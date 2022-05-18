@@ -16,11 +16,11 @@ namespace Patchers {
 		virtual bool DoPatchwork(std::string, std::string&);
 	};
 
-	struct JSPatcher : public Patcher {
-		JSObjectRef jsCallback;
+	struct JsPatcher : public Patcher {
+		JSUtils::JsValue jsCallback;
 
-		JSPatcher(std::string selector, JSObjectRef jsCallback);
-		~JSPatcher();
+		JsPatcher(std::string selector, JSUtils::JsValue jsCallback);
+		~JsPatcher();
 		bool DoPatchwork(std::string, std::string&) override;
 	};
 

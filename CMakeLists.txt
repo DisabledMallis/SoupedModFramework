@@ -55,10 +55,28 @@ if(NOT glfw_POPULATED)
     add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
 endif()
 
+#Fetch & Install ChakraCore
+FetchContent_Declare(
+    ch
+    GIT_REPOSITORY https://github.com/chakra-core/ChakraCore.git
+    GIT_TAG master
+)
+FetchContent_GetProperties(ch)
+if(NOT ch_POPULATED)
+    FetchContent_Populate(ch)
+    execute_process(COMMAND msbuild /m /p:Platform=x64 /p:Configuration=${CMAKE_BUILD_TYPE} ${ch_SOURCE_DIR}/Build/Chakra.Core.sln)
+    add_library(ChakraCore SHARED IMPORTED)
+    set_target_properties(ChakraCore PROPERTIES
+        IMPORTED_LOCATION "${ch_SOURCE_DIR}/Build/VcBuild/bin/x64_${CMAKE_BUILD_TYPE}/ChakraCore.dll"
+        IMPORTED_IMPLIB "${ch_SOURCE_DIR}/Build/VcBuild/bin/x64_${CMAKE_BUILD_TYPE}/ChakraCore.lib"
+    )
+endif()
+include_directories("${ch_SOURCE_DIR}/lib/jsrt/")
+
 # Final output dir for compile files
 set(FINAL_DIR "${CMAKE_CURRENT_LIST_DIR}/build/${CMAKE_BUILD_TYPE}")
 
-# Include SMF sources globally
+# Include SMF headers globally
 include_directories("${CMAKE_CURRENT_LIST_DIR}/common/include/")
 include_directories("${CMAKE_CURRENT_LIST_DIR}/common/glad/include/")
 include_directories("${CMAKE_CURRENT_LIST_DIR}/common/imgui/")

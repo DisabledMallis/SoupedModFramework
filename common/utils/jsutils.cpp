@@ -1,126 +1,176 @@
-#include "jsutils.h"
-#include <logger.h>
-#include <vector>
+#include <jsutils.h>
+#include <deque>
+#include <stdexcept>
+using namespace JSUtils;
 
-static JSContextRef currentContext = 0;
-void JSUtils::SetContext(JSContextRef ctx) {
-	currentContext = ctx;
+static JsRuntimeHandle runtime;
+static JsContextRef defaultContext;
+static JsContextRef currentContext;
+static JsValue global;
+static std::deque<std::function<void()>> initTasks;
+static unsigned int nextSourceContext;
+
+void JSUtils::SetupRuntime() {
+	JsCreateRuntime(JsRuntimeAttributeNone, nullptr, &runtime);
+	defaultContext = MakeContext();
+	SetCurrentContext(defaultContext);
+	for (auto task : initTasks) {
+		task();
+	}
+}
+void JSUtils::OnInitialize(std::function<void()> task) {
+	initTasks.push_back(task);
+}
+void JSUtils::DestroyRuntime() {
+	JsDisposeRuntime(runtime);
 }
 
-JSContextRef JSUtils::GetContext() {
+JsContextRef JSUtils::MakeContext() {
+	JsContextRef newContext;
+	JsCreateContext(runtime, &newContext);
+	return newContext;
+}
+JsContextRef JSUtils::GetDefaultContext() {
+	return defaultContext;
+}
+void JSUtils::SetCurrentContext(JsContextRef ctx) {
+	currentContext = ctx;
+	JsSetCurrentContext(currentContext);
+}
+JsContextRef JSUtils::GetCurrentContext() {
 	return currentContext;
 }
 
-static JSObjectRef apiObj;
-static std::vector<std::function<void()>> featureLoaders;
-void JSUtils::SetupAPI() {
-	JSObjectRef global = JSUtils::GetGlobalObject();
-	apiObj = JSUtils::CreateObject("souped", global);
-	for (auto apiFeature : featureLoaders) {
-		apiFeature();
-	}
-	Logger::Print<Logger::SUCCESS>("Initialized Souped API!");
+JsValue JSUtils::GetGlobalObject() {
+	return global;
 }
 
-void JSUtils::OnAPISetup(std::function<void()> callback) {
-	featureLoaders.push_back(callback);
+JsValue::JsValue() {
+	this->internalRef = JS_INVALID_REFERENCE;
 }
-
-JSObjectRef JSUtils::GetAPIObject() {
-	if (!apiObj) {
-		Logger::Print<Logger::WARNING>("Api was requested before initialization");
-		return 0;
-	}
-	return apiObj;
+JsValue::JsValue(int value) {
+	JsIntToNumber(value, &this->internalRef);
 }
-
-JSObjectRef JSUtils::GetGlobalObject()
-{
-	return JSContextGetGlobalObject(currentContext);
+JsValue::JsValue(JsValueRef valRef) {
+	this->internalRef = valRef;
 }
-
-JSStringRef JSUtils::CreateString(std::string text) {
-	return JSStringCreateWithUTF8CString(text.c_str());
+JsValue::JsValue(std::string objName, JsValue parentObj) {
+	JsPropertyIdRef propId;
+	JsCreateObject(&this->internalRef);
+	JsCreatePropertyId(objName.c_str(), objName.length(), &propId);
+	JsSetProperty(parentObj, propId, this->internalRef, true);
+};
+JsValue::JsValue(std::string name, JsNativeFunction func, JsValue parentObj) {
+	JsCreateFunction(func, nullptr, this->GetInternalRef());
+	JsPropertyIdRef fPropId;
+	JsCreatePropertyId(name.c_str(), name.length(), &fPropId);
+	JsSetProperty(parentObj, fPropId, this->GetInternalRef(), true);
 }
-
-std::string JSUtils::GetString(JSStringRef text) {
-	size_t len = JSStringGetLength(text);
-	char* buffer = (char*)_malloca(len + 1);
-	if (!buffer) {
-		return "";
-	}
-	JSStringGetUTF8CString(text, buffer, len);
-	return std::string(buffer, len);
+JsValueRef* JsValue::GetInternalRef() {
+	return &this->internalRef;
 }
-JSValueRef JSUtils::GetUndefined() {
-	return JSValueMakeUndefined(currentContext);
+bool JsValue::IsValid() {
+	JsValueType valType;
+	JsErrorCode jsErr = JsGetValueType(this->GetInternalRef(), &valType);
+	if (jsErr != JsNoError) {
+		return false;
+	}
+	if (valType == JsUndefined) {
+		return false;
+	}
+	if (valType == JsNull) {
+		return false;
+	}
+	return true;
 }
-JSValueRef JSUtils::CallFunction(JSObjectRef func, JSObjectRef thisPtr, const JSValueRef* argv, int argc) {
-	if (!currentContext) {
-		Logger::Print<Logger::FAILURE>("A function was called from native, but there is no JS context");
-		return JSUtils::GetUndefined();
-	}
-	if (!func) {
-		Logger::Print<Logger::FAILURE>("Tried to call a null function?");
-		return JSUtils::GetUndefined();
-	}
-	if (JSValueIsUndefined(JSUtils::GetContext(), func)) {
-		Logger::Print<Logger::FAILURE>("Tried to call an undefined function?");
-		return JSUtils::GetUndefined();
-	}
-	if (!JSObjectIsFunction(currentContext, func)) {
-		Logger::Print<Logger::FAILURE>("Attempted to call a function from native, but the object provided isn't a function!");
-		return JSUtils::GetUndefined();
-	}
-	JSValueRef exception = 0;
-	JSValueRef result = JSObjectCallAsFunction(currentContext, func, thisPtr, argc, argv, &exception);
-	if (exception) {
-		//Handle exception
-		JSStringRef jsExMsg = 0;
-		if (JSValueIsString(JSUtils::GetContext(), exception)) {
-			jsExMsg = (JSStringRef)exception;
+JsValue::operator bool() {
+	if (this->IsValid()) {
+		JsValueType valType;
+		JsGetValueType(this->GetInternalRef(), &valType);
+		if (valType == JsBoolean) {
+			bool result;
+			JsBooleanToBool(this->GetInternalRef(), &result);
+			return result;
 		}
-		else if (JSValueIsObject(JSUtils::GetContext(), exception)) {
-			JSObjectRef exObj = (JSObjectRef)exception;
-			JSValueRef msgProp = JSUtils::ReadProperty(exObj, "message");
-			if (JSValueIsString(JSUtils::GetContext(), msgProp)) {
-				jsExMsg = (JSStringRef)msgProp;
-			}
-			else {
-				Logger::Print<Logger::WARNING>("A JS exception was thrown but the message couldn't be retrieved");
-			}
-		}
-		else {
-			Logger::Print<Logger::WARNING>("A JS exception was thrown but exception type is unknown");
-		}
-		std::string ex = GetString(jsExMsg);
-		Logger::Print<Logger::FAILURE>("Function call failed with exception: {}", ex);
-		return GetUndefined();
+		throw std::exception("Value isn't a boolean");
 	}
+	throw std::exception("Value isn't valid");
+}
+JsValue::operator int() {
+	if (this->IsValid()) {
+		JsValueType valType;
+		JsGetValueType(this->GetInternalRef(), &valType);
+		if (valType == JsNumber) {
+			int result;
+			JsNumberToInt(this->GetInternalRef(), &result);
+			return result;
+		}
+		throw std::exception("Value isn't a number");
+	}
+	throw std::exception("Value isn't valid");
+}
+JsValue::operator double() {
+	if (this->IsValid()) {
+		JsValueType valType;
+		JsGetValueType(this->GetInternalRef(), &valType);
+		if (valType == JsNumber) {
+			double result;
+			JsNumberToDouble(this->GetInternalRef(), &result);
+			return result;
+		}
+		throw std::exception("Value isn't a number");
+	}
+	throw std::exception("Value isn't valid");
+}
+JsValue::operator JsValueRef() {
+	return this->GetInternalRef();
+}
+void JsValue::operator=(bool value) {
+	JsBoolToBoolean(value, this->GetInternalRef());
+}
+void JsValue::operator=(int value) {
+	JsIntToNumber(value, this->GetInternalRef());
+}
+void JsValue::operator=(double value) {
+	JsDoubleToNumber(value, this->GetInternalRef());
+}
+void JsValue::operator=(JsValueRef value) {
+	this->internalRef = value;
+}
+void JsValue::operator=(std::string value) {
+	std::wstring wValue(value.begin(), value.end());
+	JsPointerToString(wValue.c_str(), wValue.length(), this->GetInternalRef());
+}
+std::string JsValue::cpp_str() {
+	JsValueRef stringValue;
+	JsConvertValueToString(this->internalRef, &stringValue);
+	char* string = nullptr;
+	size_t length;
+	JsCopyString(stringValue, nullptr, 0, &length);
+	string = (char*)_malloca(length + 1);
+	if (!string) {
+		throw std::runtime_error("Failed to allocate string buffer");
+	}
+	JsCopyString(stringValue, string, length + 1, nullptr);
+	return std::string(string, length);
+}
+JsValue::operator std::string() {
+	return this->cpp_str();
+}
+JsValue JsValue::operator[](const char* prop) {
+	JsValue jsProp(prop);
+	JsValue result;
+	JsObjectGetProperty(this->internalRef, jsProp.GetInternalRef(), result.GetInternalRef());
 	return result;
 }
-JSValueRef JSUtils::ReadProperty(JSObjectRef obj, std::string prop) {
-	JSStringRef jsPropStr = CreateString(prop);
-	if (JSObjectHasProperty(currentContext, obj, jsPropStr)) {
-		JSValueRef jsProp = JSObjectGetProperty(currentContext, obj, jsPropStr, 0);
-		return jsProp;
+
+JsValue JSUtils::RunScript(std::string name, std::string code) {
+	JsValue result;
+	std::wstring wName(name.begin(), name.end());
+	std::wstring wCode(code.begin(), code.end());
+	JsErrorCode jsErr = JsRunScript(wCode.c_str(), nextSourceContext++, wName.c_str(), result.GetInternalRef());
+	if (jsErr == JsNoError) {
+		return result;
 	}
-	Logger::Print<Logger::FAILURE>("Object does not have property '{}'", prop);
-	return JSUtils::GetUndefined();
-}
-
-JSObjectRef JSUtils::CreateObject(std::string objectName, JSObjectRef parentObj) {
-	JSStringRef jsObjStr = CreateString(objectName);
-	JSObjectRef obj = JSObjectMake(currentContext, 0, 0);
-	JSObjectSetProperty(currentContext, parentObj, jsObjStr, obj, 0, 0);
-	return obj;
-}
-
-JSObjectRef JSUtils::CreateFunction(std::string funcName, JSObjectCallAsFunctionCallback callback, JSObjectRef parentObj)
-{
-	JSStringRef jsFuncStr = JSStringCreateWithUTF8CString(funcName.c_str());
-	JSObjectRef func = JSObjectMakeFunctionWithCallback(currentContext, jsFuncStr, callback);
-	JSObjectSetProperty(currentContext, parentObj, jsFuncStr, func, 0, 0);
-	JSStringRelease(jsFuncStr);
-	return func;
+	throw std::runtime_error("Script execution failed: " + jsErr);
 }

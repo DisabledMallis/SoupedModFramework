@@ -11,7 +11,6 @@
 #include <Windows.h>
 #include <stack>
 #include <polyhook2/Detour/x64Detour.hpp>
-#include <webui.h>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_win32.h>
@@ -96,14 +95,7 @@ LRESULT hkWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		return 0;
 	}
 
-	RECT r;
-	if (GetClientRect(hWnd, &r)) {
-		WebUI::SetRect(r.left, r.top, r.right - r.left, r.bottom - r.top);
-	}
-
 	ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
-
-	WebUI::WndProc(hWnd, uMsg, wParam, lParam);
 
 	return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
 }
@@ -124,11 +116,6 @@ bool hkSwapBuffers(HDC hdc, int b) {
 		gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 		gladLoadGL();
 
-		WebUI::Init();
-		WebUI::InitPlatform();
-		WebUI::CreateRenderer();
-		WebUI::CreateView("file:///assets/test.html");
-
 		hGameWindow = WindowFromDC(hdc);
 		oWndProc = (WNDPROC)SetWindowLongPtr(hGameWindow, GWLP_WNDPROC, (__int3264)(LONG_PTR)hkWndProc);
 
@@ -142,7 +129,7 @@ bool hkSwapBuffers(HDC hdc, int b) {
 		initUi = true;
 	}
 
-	if (!initUi || !WebUI::IsLoaded()) {
+	if (!initUi) {
 		return PLH::FnCast(oSwapBuffers, hkSwapBuffers)(hdc, b);
 	}
 
@@ -151,8 +138,6 @@ bool hkSwapBuffers(HDC hdc, int b) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
-
-	WebUI::RenderOneFrame();
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

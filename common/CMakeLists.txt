@@ -9,7 +9,7 @@ add_subdirectory(utils)
 
 target_include_directories(Common PRIVATE "${ULTRALIGHT_INCLUDE_DIR}")
 target_link_directories(Common PRIVATE "${ULTRALIGHT_LIBRARY_DIR}")
-target_link_libraries(Common PRIVATE fmt glfw)
+target_link_libraries(Common PRIVATE fmt glfw ChakraCore)
 
 # Add target to build dir
 add_custom_command(
@@ -17,4 +17,7 @@ add_custom_command(
 	COMMAND ${CMAKE_COMMAND} -E copy
 		${CMAKE_BINARY_DIR}/common/Common.dll
 		${FINAL_DIR}/Common.dll
+	COMMAND ${CMAKE_COMMAND} -E copy
+		"${ch_SOURCE_DIR}/Build/VcBuild/bin/x64_${CMAKE_BUILD_TYPE}/ChakraCore.dll"
+		"${FINAL_DIR}/ChakraCore.dll"
 )

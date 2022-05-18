@@ -1,7 +1,7 @@
 #include <ipc.h>
 #include <logger.h>
 
-const char* IPC::SpawnAndWaitForPipe(std::string pipeName) {
+std::string IPC::SpawnAndWaitForPipe(std::string pipeName) {
 	HANDLE hPipe = CreateNamedPipeA(pipeName.c_str(), PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE | PIPE_WAIT, 1, MAX_PATH, MAX_PATH, NMPWAIT_USE_DEFAULT_WAIT, NULL);
 	char* readBuffer = (char*)_malloca(MAX_PATH + 1);
 	if (!readBuffer) {

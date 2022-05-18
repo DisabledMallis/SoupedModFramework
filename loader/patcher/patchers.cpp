@@ -1,34 +1,24 @@
 #include <patchers.h>
 #include <logger.h>
-#include <webui.h>
 
 //success(filename, data)
 std::vector<Patchers::Patcher*> patcherList;
 
 jsfunction(Patchers::registerPatcher) {
-	JSValueRef patcherId = JSUtils::GetUndefined();
+	JSUtils::JsValue patcherId = 0;
 	if (jsargc == 2) {
-		JSObjectRef jsCallback = (JSObjectRef)jsargv[0];
+		JSUtils::JsValue callback = jsargv[0];
+		JSUtils::JsValue targetFile = jsargv[1];
 		
-		if (!jsCallback) {
-			Logger::Print<Logger::WARNING>("Attemped to register a patcher with no callback");
-			return patcherId;
-		}
-		if (JSValueIsUndefined(JSUtils::GetContext(), jsCallback)) {
-			Logger::Print<Logger::WARNING>("Attemped to register a patcher, but the callback is undefined. Did the callback get GC'd?");
-			return patcherId;
-		}
-		if (!JSValueIsObject(JSUtils::GetContext(), jsCallback)) {
-			Logger::Print<Logger::WARNING>("Attemped to register a patcher, but the callback is not an object (and as a result cannot be a function). Did we get GC'd?");
-			return patcherId;
+		if (!callback.IsValid()) {
+			Logger::Print<Logger::WARNING>("Attemped to register a patcher, but the callback is invalid. Was a function passed?");
+			return JS_INVALID_REFERENCE;
 		}
 
-		std::string targetFile = JSUtils::GetString((JSStringRef)jsargv[1]);
-
-		JSPatcher* jsPatcher = new JSPatcher(targetFile, jsCallback);
+		JsPatcher* jsPatcher = new JsPatcher(targetFile, callback);
 		
-		size_t id = Patchers::RegisterPatcher(jsPatcher);
-		patcherId = JSValueMakeNumber(JSUtils::GetContext(), id);
+		int id = Patchers::RegisterPatcher(jsPatcher);
+		patcherId = id;
 		return patcherId;
 	}
 	else {
@@ -59,39 +49,26 @@ void Patchers::PatchData(std::string filename, std::string& data) {
 	}
 }
 
-Patchers::JSPatcher::JSPatcher(std::string selector, JSObjectRef jsCallback) : Patcher(selector)
+Patchers::JsPatcher::JsPatcher(std::string selector, JSUtils::JsValue jsCallback) : Patcher(selector)
 {
-	JSValueProtect(JSUtils::GetContext(), jsCallback);
 	this->jsCallback = jsCallback;
 }
 
-Patchers::JSPatcher::~JSPatcher()
-{
-	JSValueUnprotect(JSUtils::GetContext(), jsCallback);
-}
+Patchers::JsPatcher::~JsPatcher() {};
 
 bool Patchers::Patcher::DoPatchwork(std::string, std::string&)
 {
 	return true;
 }
 
-bool Patchers::JSPatcher::DoPatchwork(std::string fileName, std::string& fileContent)
+bool Patchers::JsPatcher::DoPatchwork(std::string fileName, std::string& fileContent)
 {
-	//Acquire JS context from WebUI
-	ultralight::RefPtr<ultralight::JSContext> ctxRef = WebUI::AcquireJSContext();
-	JSUtils::SetContext(ctxRef->ctx());
-
-	if (!jsCallback) {
+	if (!this->jsCallback) {
 		Logger::Print<Logger::WARNING>("Attemped to run a patcher with no callback");
 		return false;
 	}
 
-	if (JSValueIsUndefined(JSUtils::GetContext(), jsCallback)) {
-		Logger::Print<Logger::WARNING>("A patcher was executed but the callback is undefined. Did the callback get GC'd?");
-		return false;
-	}
-
-	if (!JSValueIsObject(JSUtils::GetContext(), jsCallback)) {
+	if (!this->jsCallback.IsValid()) {
 		Logger::Print<Logger::WARNING>("A patcher was executed, but the callback is not an object (and as a result cannot be a function). Did we get GC'd?");
 		return false;
 	}
@@ -107,37 +84,14 @@ bool Patchers::JSPatcher::DoPatchwork(std::string fileName, std::string& fileCon
 	std::string patchResult = "";
 	bool success = false;
 
-	JSStringRef jsFileName = JSUtils::CreateString(fileName);
-	JSStringRef jsFileContent = JSUtils::CreateString(fileContent);
-
-	const JSValueRef jsArgs[] = {
-		(JSValueRef)JSValueMakeString(JSUtils::GetContext(), jsFileName),
-		(JSValueRef)JSValueMakeString(JSUtils::GetContext(), jsFileContent)
-	};
-
 	//Call the function on the ui thread
-	shared_thread& uiThread = WebUI::GetThread();
-	JSValueRef result;
-	uiThread.DoWork([&]() {
-		Logger::Print("Invoking patcher callback");
-		result = JSUtils::CallFunction(jsCallback, 0, jsArgs, 2);
-		Logger::Print("Patcher callback invoked");
-	});
-	uiThread.AwaitCompletion();
+	Logger::Print("Invoking patcher callback");
+	JSUtils::JsValue result = this->jsCallback(fileName, fileContent);
 	Logger::Print("Patcher completed");
 
-	if (!JSValueIsObject(JSUtils::GetContext(), result)) {
-		Logger::Print<Logger::WARNING>("JS Patcher callback did NOT return an object! Ignoring patch...");
-		return false;
-	}
-
-	JSValueRef successful = JSUtils::ReadProperty((JSObjectRef)result, "successful");
-	success = JSValueToBoolean(JSUtils::GetContext(), successful);
+	success = result["successful"];
 	if (success) {
-		JSStringRef jsPatchedContent = (JSStringRef)JSUtils::ReadProperty((JSObjectRef)result, "data");
-		patchResult = JSUtils::GetString(jsPatchedContent);
+		fileContent = JSUtils::JsValue(result["data"]);
 	}
-
-	fileContent = patchResult;
 	return success;
 }

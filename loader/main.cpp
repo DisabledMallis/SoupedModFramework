@@ -6,7 +6,6 @@
 #include <ipc.h>
 #include <SoupSTL.h>
 #include "patcher/patchers/BattleMenuPatcher.h"
-#include <webui.h>
 
 static PLH::x64Detour* plhwWinMain;
 static uint64_t owWinMain;
@@ -32,16 +31,12 @@ int __stdcall hkwWinMain(
 	Logger::Print("Hooks ready");
 
 	Logger::Print("Killing launcher");
-	HANDLE hPipe = IPC::OpenPipe(LAUNCH_STATUS_PIPE);
-	Logger::Print("Pipe open");
-	IPC::WriteMessage(hPipe, "exit");
-	Logger::Print("Message sent");
-	IPC::ClosePipe(hPipe);
+	int retval = system("taskkill /F /T /IM launcher.exe");
 	Logger::Print("Launcher killed & pipe closed");
 
-	JSUtils::OnAPISetup([]() {
-		JSObjectRef souped = JSUtils::GetAPIObject();
-		JSObjectRef jsRegisterPatcher = JSUtils::CreateFunction("registerPatcher", Patchers::registerPatcher, souped);
+	JSUtils::OnInitialize([]() {
+		JSUtils::JsValue souped("souped");
+		JSUtils::JsValue jsRegisterPatcher("registerPatcher", (JsNativeFunction)Patchers::registerPatcher, souped);
 		Logger::Print("Register Patcher added to souped JS");
 	});
 
