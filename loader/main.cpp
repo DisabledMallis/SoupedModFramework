@@ -38,21 +38,34 @@ int __stdcall hkwWinMain(
 	//Set up basic JS funcs
 	JSUtils::OnInitialize([]() {
 		JSUtils::JsValue& global = JSUtils::GetGlobalObject();
-		global["console"] = JSUtils::JsValue("console", true);
+		Logger::Print("Global obj ref: {}", (void*)global.internalRef);
+		JSUtils::JsValue console = JSUtils::JsValue("console", true);
 
-		global["console"]["print"] = JSUtils::JsValue((JsNativeFunction)StdJs::print<Logger::DEFAULT>);
-		global["console"]["info"] = JSUtils::JsValue((JsNativeFunction)StdJs::info);
-		global["console"]["log"] = JSUtils::JsValue((JsNativeFunction)StdJs::log);
-		global["console"]["warn"] = JSUtils::JsValue((JsNativeFunction)StdJs::warn);
-		global["console"]["error"] = JSUtils::JsValue((JsNativeFunction)StdJs::error);
+		JSUtils::JsValue print = JSUtils::JsValue((JsNativeFunction)&StdJs::print<Logger::DEFAULT>);
+		JSUtils::JsValue info = JSUtils::JsValue((JsNativeFunction)&StdJs::info);
+		JSUtils::JsValue log = JSUtils::JsValue((JsNativeFunction)&StdJs::log);
+		JSUtils::JsValue warn = JSUtils::JsValue((JsNativeFunction)&StdJs::warn);
+		JSUtils::JsValue error = JSUtils::JsValue((JsNativeFunction)&StdJs::error);
+		console.SetProperty("print", print);
+		console.SetProperty("info", info);
+		console.SetProperty("log", log);
+		console.SetProperty("warn", warn);
+		console.SetProperty("error", error);
+
+		global.SetProperty("console", console);
 
 		Logger::Print("Added missing default JS functions");
 	});
 	//Set up souped api
 	JSUtils::OnInitialize([]() {
-		JSUtils::JsValue souped("souped", true);
-		JSUtils::JsValue jsRegisterPatcher("registerPatcher", (JsNativeFunction)Patchers::registerPatcher);
-		souped["registerPatcher"] = jsRegisterPatcher;
+		JSUtils::JsValue& global = JSUtils::GetGlobalObject();
+		JSUtils::JsValue souped = JSUtils::JsValue("souped", true);
+
+		JSUtils::JsValue registerPatcher = JSUtils::JsValue((JsNativeFunction)Patchers::registerPatcher);
+		souped.SetProperty("registerPatcher", registerPatcher);
+
+		global.SetProperty("souped", souped);
+
 		Logger::Print("souped API ready");
 
 		//Run the souped.js file

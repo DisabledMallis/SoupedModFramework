@@ -89,9 +89,9 @@ bool Patchers::JsPatcher::DoPatchwork(std::string fileName, std::string& fileCon
 	JSUtils::JsValue result = this->jsCallback(fileName, fileContent);
 	Logger::Print("Patcher completed");
 
-	success = result["successful"];
+	success = result.GetProperty("successful");
 	if (success) {
-		fileContent = JSUtils::JsValue(result["data"]);
+		fileContent = JSUtils::JsValue(result.GetProperty("data"));
 	}
 	return success;
 }

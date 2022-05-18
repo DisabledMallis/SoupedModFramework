@@ -4,9 +4,10 @@
 #include <string>
 #include <functional>
 #include <filesystem>
+#include <map>
 
 #define jsfunction(funcName) JsValueRef CALLBACK funcName(JsValueRef callee, bool isConstructCall, JsValueRef* arguments, short argumentCount, void *callbackState)
-#define jsargc argumentCount-1
+#define jsargc (argumentCount-1)
 #define jsargv arguments
 
 namespace JSUtils {
@@ -26,30 +27,30 @@ namespace JSUtils {
 	JsValue& GetGlobalObject();
 
 	class JsValue {
-		JsValueRef internalRef;
 	public:
+		JsValueRef internalRef;
 		JsValue();
 		JsValue(int);
 		JsValue(JsValueRef valRef);
 		JsValue(std::string text);
 		JsValue(std::string objName, bool isObject);
 		JsValue(JsNativeFunction);
-		JsValueRef* GetInternalRef();
 		virtual bool IsValid();
-		bool HasProperty(std::string propName);
+		bool HasProperty(std::string);
+		JsValue& GetProperty(std::string);
+		void SetProperty(std::string, JsValue&);
+		std::string cpp_str();
 		operator bool();
 		operator int();
 		operator double();
 		operator JsValueRef();
+		operator std::string();
 		void operator=(bool);
 		void operator=(int);
 		void operator=(double);
 		void operator=(JsValueRef);
+		void operator=(JsNativeFunction);
 		void operator=(std::string);
-		std::string cpp_str();
-		operator std::string();
-		JsValue& operator[](const char*);
-		JsValue& operator[](std::string);
 		template<typename... T>
 		JsValue operator()(T... argv) {
 			constexpr size_t argc = sizeof...(argv);
@@ -57,11 +58,11 @@ namespace JSUtils {
 			int i = 0;
 			([&](auto& arg)
 				{
-					args[i] = JsValue(arg).GetInternalRef();
+					args[i] = JsValue(arg).internalRef;
 					i++;
 				} (argv), ...);
 			JsValue resultVal;
-			JsErrorCode jsErrC = JsCallFunction(this->GetInternalRef(), args, argc, resultVal.GetInternalRef());
+			JsErrorCode jsErrC = JsCallFunction(this->internalRef, args, argc, &resultVal.internalRef);
 			//TODO: Error handling
 			return resultVal;
 		}
