@@ -5,7 +5,7 @@
 namespace StdJs {
 	template<Logger::LogLevel level>
 	jsfunction(print) {
-		if (jsargc == 0) {
+		if (jsargc == 2) {
 			JSUtils::JsValue message = jsargv[1];
 			Logger::Print<level>("{}", message.cpp_str());
 		}

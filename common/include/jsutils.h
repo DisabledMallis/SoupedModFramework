@@ -7,8 +7,9 @@
 #include <map>
 
 #define jsfunction(funcName) JsValueRef CALLBACK funcName(JsValueRef callee, bool isConstructCall, JsValueRef* arguments, short argumentCount, void *callbackState)
-#define jsargc (argumentCount-1)
+#define jsargc argumentCount
 #define jsargv arguments
+#define CATCHERROR(error) JSUtils::HandleException(error, __FUNCTION__, __FILE__, __LINE__)
 
 namespace JSUtils {
 	/* Runtime functions */
@@ -20,21 +21,27 @@ namespace JSUtils {
 	JsContextRef MakeContext();
 	JsContextRef GetDefaultContext();
 	JsContextRef GetCurrentContext();
-	void SetCurrentContext(JsContextRef ctx);
+	void SetCurrentContext(JsContextRef);
 
 	/*Interop*/
 	class JsValue;
 	JsValue& GetGlobalObject();
+	JsValue RunCode(std::string, std::string);
+	JsValue RunFile(std::filesystem::path);
+	JsErrorCode JsCallSafely(JsValueRef func, JsValueRef* argv, unsigned short argc, JsValueRef* result);
+	bool HandleException(JsErrorCode, std::string, std::string, int);
+	void ThrowException(std::string);
 
 	class JsValue {
 	public:
 		JsValueRef internalRef;
 		JsValue();
 		JsValue(int);
-		JsValue(JsValueRef valRef);
-		JsValue(std::string text);
-		JsValue(std::string objName, bool isObject);
+		JsValue(JsValueRef);
+		JsValue(std::string);
+		JsValue(std::string, bool);
 		JsValue(JsNativeFunction);
+		~JsValue();
 		virtual bool IsValid();
 		bool HasProperty(std::string);
 		JsValue& GetProperty(std::string);
@@ -54,20 +61,17 @@ namespace JSUtils {
 		template<typename... T>
 		JsValue operator()(T... argv) {
 			constexpr size_t argc = sizeof...(argv);
-			JsValueRef args[argc];
+			JsValueRef args[argc+1];
+			args[0] = GetGlobalObject().internalRef;
 			int i = 0;
 			([&](auto& arg)
 				{
-					args[i] = JsValue(arg).internalRef;
+					args[i+1] = JsValue(arg).internalRef;
 					i++;
 				} (argv), ...);
 			JsValue resultVal;
-			JsErrorCode jsErrC = JsCallFunction(this->internalRef, args, argc, &resultVal.internalRef);
-			//TODO: Error handling
+			JsErrorCode jsErrC = JSUtils::JsCallSafely(this->internalRef, args, argc+1, &resultVal.internalRef);
 			return resultVal;
 		}
 	};
-
-	JsValue RunCode(std::string name, std::string code);
-	JsValue RunFile(std::filesystem::path file);
 };

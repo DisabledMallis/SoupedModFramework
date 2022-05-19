@@ -12,7 +12,7 @@
 console.log("Welcome to souped.js!");
 
 //Patcher helper functions
-souped.registerJsonPatcher = function(callback, filename) {
+souped.registerJsonPatcher = function (callback, filename) {
     souped.registerPatcher((name, data) => {
         var dataObj = JSON.parse(data);
         var { successful, data } = callback(dataObj);
@@ -25,6 +25,7 @@ souped.registerJsonPatcher = function(callback, filename) {
 }
 
 function dartPatch(data) {
+    console.warn("Dart MokeY!!");
     console.log("Dart type: " + data["type"]);
     var towerVars = data["variables"];
     for (var i = 0; i < towerVars.length; i++) {

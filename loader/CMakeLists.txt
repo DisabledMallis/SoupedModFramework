@@ -1,13 +1,13 @@
 add_library(Loader SHARED)
 
 target_sources(Loader PRIVATE
+	"scripts/souped.js"
 	"hookManager.cpp"
 	"main.cpp"
 )
 
 add_subdirectory(dumper)
 add_subdirectory(patcher)
-add_subdirectory(scripts)
 
 set(SDK_ROOT "${CMAKE_BINARY_DIR}/SDK/")
 set(ULTRALIGHT_INCLUDE_DIR "${SDK_ROOT}/include")

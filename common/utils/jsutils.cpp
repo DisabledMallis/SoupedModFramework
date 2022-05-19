@@ -67,24 +67,107 @@ JsValue& JSUtils::GetGlobalObject() {
 	jsThread.AwaitCompletion();
 	return global;
 }
+JsValue JSUtils::RunCode(std::string name, std::string code) {
+	JsValue result = JS_INVALID_REFERENCE;
+	jsThread.DoWork([name, code, &result]() {
+		std::wstring wName(name.begin(), name.end());
+		std::wstring wCode(code.begin(), code.end());
+		JsErrorCode jsErr = JsRunScript(wCode.c_str(), nextSourceContext++, wName.c_str(), &result.internalRef);
+		CATCHERROR(jsErr);
+	});
+	jsThread.AwaitCompletion();
+	return result;
+}
+JsValue JSUtils::RunFile(std::filesystem::path file) {
+	std::ifstream stream(file);
+	std::string sourceStr((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
+	return RunCode(file.string(), sourceStr);
+}
+JsErrorCode JSUtils::JsCallSafely(JsValueRef func, JsValueRef* argv, unsigned short argc, JsValueRef* result) {
+	JsErrorCode jsErr;
+	jsThread.DoWork([&]() {
+		JSUtils::SetCurrentContext(JSUtils::GetDefaultContext());
+		jsErr = JsCallFunction(func, argv, argc, result);
+		if (jsErr != JsNoError) {
+			CATCHERROR(jsErr);
+		}
+	});
+	jsThread.AwaitCompletion();
+	return jsErr;
+}
+/*
+* Returns: If an exception was handled/needed to be handled
+* jsErr: The JS error code
+*/
+bool JSUtils::HandleException(JsErrorCode jsErr, std::string func, std::string file, int line) {
+	if (jsErr == JsNoError) {
+		return false;
+	}
+	bool result = false;
+	jsThread.DoWork([&]() {
+		JsValue exception;
+		JsErrorCode exErr = JsGetAndClearException(&exception.internalRef);
+		if (exErr == JsNoError) {
+			std::string name = "<name>";
+			if (exception.HasProperty("name")) {
+				name = exception.GetProperty("name").cpp_str();
+			}
+			std::string message = "<message>";
+			if (exception.HasProperty("message")) {
+				message = exception.GetProperty("message").cpp_str();
+			}
+			Logger::Print<Logger::FAILURE>("{}: {}", name, message);
+			if (exception.HasProperty("stack")) {
+				std::string stack = exception.GetProperty("stack").cpp_str();
+				Logger::Print<Logger::FAILURE>("{}", stack);
+			}
+			result = true;
+			return;
+		}
+		Logger::Print<Logger::FAILURE>("Host error: {}, Function: {}, File: {}, Line: {}", exErr, func, file, line);
+	});
+	jsThread.AwaitCompletion();
+	return result;
+}
+void JSUtils::ThrowException(std::string message) {
+	jsThread.DoWork([&]() {
+		JsValue jsMsg = message;
+		JsValue exception;
+		JsCreateError(jsMsg, &exception.internalRef);
+		JsSetException(exception.internalRef);
+	});
+	jsThread.AwaitCompletion();
+	CATCHERROR(JsErrorInExceptionState);
+}
 
 JsValue::JsValue() {
 	this->internalRef = JS_INVALID_REFERENCE;
 }
 JsValue::JsValue(int value) {
+	this->internalRef = JS_INVALID_REFERENCE;
 	jsThread.DoWork([&]() {
-		JsIntToNumber(value, &this->internalRef);
+		JsErrorCode err = JsIntToNumber(value, &this->internalRef);
+		if (err != JsNoError) {
+			CATCHERROR(err);
+		}
 	});
+	jsThread.AwaitCompletion();
 }
 JsValue::JsValue(JsValueRef valRef) {
 	this->internalRef = valRef;
 }
 JsValue::JsValue(std::string text) {
+	this->internalRef = JS_INVALID_REFERENCE;
 	jsThread.DoWork([&]() {
-		JsCreateString(text.c_str(), text.length(), &this->internalRef);
+		JsErrorCode err = JsCreateString(text.c_str(), text.length(), &this->internalRef);
+		if (err != JsNoError) {
+			CATCHERROR(err);
+		}
 	});
+	jsThread.AwaitCompletion();
 }
 JsValue::JsValue(std::string objName, bool isObject) {
+	this->internalRef = JS_INVALID_REFERENCE;
 	jsThread.DoWork([&]() {
 		if (isObject) {
 			JsCreateObject(&this->internalRef);
@@ -93,13 +176,19 @@ JsValue::JsValue(std::string objName, bool isObject) {
 			JsValue(objName);
 		}
 	});
+	jsThread.AwaitCompletion();
 };
 JsValue::JsValue(JsNativeFunction func) {
+	this->internalRef = JS_INVALID_REFERENCE;
 	jsThread.DoWork([&]() {
-		JsCreateFunction(func, nullptr, &this->internalRef);
+		JsErrorCode err = JsCreateFunction(func, nullptr, &this->internalRef);
+		if (err != JsNoError) {
+			CATCHERROR(err);
+		}
 	});
 	jsThread.AwaitCompletion();
 }
+JsValue::~JsValue() {}
 bool JsValue::IsValid() {
 	if (!this) {
 		return false;
@@ -112,6 +201,7 @@ bool JsValue::IsValid() {
 		JsValueType valType = JsUndefined;
 		JsErrorCode jsErr = JsGetValueType(this->internalRef, &valType);
 		if (jsErr != JsNoError) {
+			CATCHERROR(jsErr);
 			result = false;
 			return;
 		}
@@ -136,7 +226,9 @@ bool JsValue::HasProperty(std::string propName) {
 	bool result;
 	jsThread.DoWork([&]() {
 		JsValue jsPropName = propName;
-		JsObjectHasProperty(this->internalRef, jsPropName.internalRef, &result);
+		JsErrorCode err = JsObjectHasProperty(this->internalRef, jsPropName.internalRef, &result);
+		if(err != JsNoError)
+			CATCHERROR(err);
 	});
 	jsThread.AwaitCompletion();
 	return result;
@@ -145,12 +237,16 @@ JsValue& JsValue::GetProperty(std::string propName) {
 	JsValue* result = new JsValue;
 	jsThread.DoWork([&]() {
 		JsValueRef propId;
-		JsCreatePropertyId(propName.c_str(), propName.length(), &propId);
+		JsErrorCode createErr = JsCreatePropertyId(propName.c_str(), propName.length(), &propId);
+		if (createErr != JsNoError)
+			CATCHERROR(createErr);
 		if (this->HasProperty(propName)) {
-			JsGetProperty(this->internalRef, propId, &result->internalRef);
+			JsErrorCode getErr = JsGetProperty(this->internalRef, propId, &result->internalRef);
+			if (getErr != JsNoError)
+				CATCHERROR(getErr);
 			return;
 		}
-		throw std::runtime_error("Object does not have specified property");
+		ThrowException("Object does not have specified property");
 	});
 	jsThread.AwaitCompletion();
 	return *result;
@@ -158,8 +254,14 @@ JsValue& JsValue::GetProperty(std::string propName) {
 void JsValue::SetProperty(std::string propName, JsValue& value) {
 	jsThread.DoWork([&]() {
 		JsValueRef propId;
-		JsCreatePropertyId(propName.c_str(), propName.length(), &propId);
-		JsSetProperty(this->internalRef, propId, value.internalRef, true);
+		JsErrorCode createErr = JsCreatePropertyId(propName.c_str(), propName.length(), &propId);
+		if (createErr != JsNoError) {
+			CATCHERROR(createErr);
+		}
+		JsErrorCode setErr = JsSetProperty(this->internalRef, propId, value.internalRef, true);
+		if (setErr != JsNoError) {
+			CATCHERROR(setErr);
+		}
 	});
 	jsThread.AwaitCompletion();
 }
@@ -171,20 +273,29 @@ std::string JsValue::cpp_str() {
 		JsValueType type;
 		JsErrorCode typeErr = JsGetValueType(this->internalRef, &type);
 		if (typeErr != JsNoError) {
-			throw std::runtime_error("Failed to get value's type for string conversion");
+			CATCHERROR(typeErr);
 		}
 		if (type == JsString) {
 			stringValue = this->internalRef;
 		}
 		else {
-			JsConvertValueToString(this->internalRef, &stringValue);
+			JsErrorCode convertError = JsConvertValueToString(this->internalRef, &stringValue);
+			if (convertError != JsNoError) {
+				CATCHERROR(convertError);
+			}
 		}
-		JsCopyString(stringValue, nullptr, 0, &length);
+		JsErrorCode lenErr = JsCopyString(stringValue, nullptr, 0, &length);
+		if (lenErr != JsNoError) {
+			CATCHERROR(lenErr);
+		}
 		string = (char*)malloc(length + 1);
 		if (!string) {
 			throw std::runtime_error("Failed to allocate string buffer");
 		}
-		JsCopyString(stringValue, string, length + 1, nullptr);
+		JsErrorCode copyErr = JsCopyString(stringValue, string, length, nullptr);
+		if (copyErr != JsNoError) {
+			CATCHERROR(copyErr);
+		}
 	});
 	jsThread.AwaitCompletion();
 	return std::string(string, length);
@@ -197,10 +308,13 @@ JsValue::operator bool() {
 			JsGetValueType(this->internalRef, &valType);
 			if (valType == JsBoolean) {
 				JsBooleanToBool(this->internalRef, &result);
+				return;
 			}
-			throw std::exception("Value isn't a boolean");
+			ThrowException("Value isn't a boolean");
 		}
-		throw std::exception("Value isn't valid");
+		else {
+			ThrowException("Value isn't valid");
+		}
 	});
 	jsThread.AwaitCompletion();
 	return result;
@@ -270,32 +384,4 @@ void JsValue::operator=(std::string value) {
 }
 JsValue::operator std::string() {
 	return this->cpp_str();
-}
-JsValue JSUtils::RunCode(std::string name, std::string code) {
-	JsValue result = JS_INVALID_REFERENCE;
-	jsThread.DoWork([name, code, &result]() {
-		std::wstring wName(name.begin(), name.end());
-		std::wstring wCode(code.begin(), code.end());
-		JsErrorCode jsErr = JsRunScript(wCode.c_str(), nextSourceContext++, wName.c_str(), &result.internalRef);
-		if (jsErr == JsNoError) {
-			return;
-		}
-		Logger::Print<Logger::FAILURE>("Script execution failed: {}", jsErr);
-		JsValue exception;
-		JsErrorCode exErr = JsGetAndClearException(&exception.internalRef);
-		if (exErr == JsNoError) {
-			std::string message = exception.GetProperty("message").cpp_str();
-			Logger::Print<Logger::FAILURE>("JS Error: {}", message);
-			return;
-		}
-		Logger::Print<Logger::FAILURE>("FATAL: Failed clearing exception, expect a crash?");
-		Logger::Print<Logger::FAILURE>("Error code: {}", exErr);
-	});
-	jsThread.AwaitCompletion();
-	return result;
-}
-JsValue JSUtils::RunFile(std::filesystem::path file) {
-	std::ifstream stream(file);
-	std::string sourceStr((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
-	return RunCode(file.string(), sourceStr);
 }
