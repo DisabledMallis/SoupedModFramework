@@ -9,7 +9,7 @@ add_subdirectory(utils)
 
 target_include_directories(Common PRIVATE "${ULTRALIGHT_INCLUDE_DIR}")
 target_link_directories(Common PRIVATE "${ULTRALIGHT_LIBRARY_DIR}")
-target_link_libraries(Common PRIVATE fmt glfw ChakraCore)
+target_link_libraries(Common PUBLIC fmt glfw ChakraCore)
 
 # Add target to build dir
 add_custom_command(
