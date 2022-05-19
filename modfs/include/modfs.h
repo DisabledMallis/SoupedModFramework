@@ -3,11 +3,9 @@
 #include <filesystem>
 #include <string>
 #include <vector>
-#include <ZipArchive.h>
-#include <ZipArchiveEntry.h>
-#include <ZipCpp.h>
-#include <ZipFile.h>
+#include <ziputils.h>
 
+struct archive {};
 namespace ModFS {
 	struct ModMeta {
 		std::string name;
@@ -17,10 +15,10 @@ namespace ModFS {
 		std::vector<std::string> scripts;
 	};
 	struct Mod {
-		ZipArchive::Ptr pArchive;
+		ZipUtils::ArchiveWrapper* innerArchive;
 		ModMeta meta;
 		Mod(std::filesystem::path);
 		std::string ReadEntry(std::string);
 	};
-	Mod OpenArchive(std::string);
+	Mod OpenArchive(std::filesystem::path);
 };

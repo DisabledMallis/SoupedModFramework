@@ -71,6 +71,20 @@ if(NOT ch_POPULATED)
         IMPORTED_IMPLIB "${ch_SOURCE_DIR}/Build/VcBuild/bin/x64_${CMAKE_BUILD_TYPE}/ChakraCore.lib"
     )
 endif()
+
+#Add libarchive
+FetchContent_Declare(
+    libarchive
+    GIT_REPOSITORY https://github.com/libarchive/libarchive.git
+    GIT_TAG master
+)
+FetchContent_GetProperties(libarchive)
+if(NOT libarchive_POPULATED)
+    FetchContent_Populate(libarchive)
+	include_directories("${libarchive_SOURCE_DIR}/libarchive")
+    add_subdirectory(${libarchive_SOURCE_DIR} ${libarchive_BINARY_DIR})
+endif()
+
 include_directories("${ch_SOURCE_DIR}/lib/jsrt/")
 
 # Final output dir for compile files
@@ -90,6 +104,7 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 add_subdirectory(common)
 add_subdirectory(launcher)
 add_subdirectory(loader)
+add_subdirectory(modexplore)
 add_subdirectory(modfs)
 add_subdirectory(proxy)
 add_subdirectory(soupsdk)

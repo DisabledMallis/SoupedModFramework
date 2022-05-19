@@ -3,7 +3,7 @@
 #include <logger.h>
 
 ModFS::Mod::Mod(std::filesystem::path pathOnDisk) {
-	this->pArchive = ZipFile::Open(pathOnDisk.string());
+	this->innerArchive = ZipUtils::ArchiveWrapper::OpenArchive(pathOnDisk);
 	this->meta = ModFS::ModMeta();
 	std::string modMeta = this->ReadEntry("meta.json");
 	nlohmann::json metaJson = nlohmann::json::parse(modMeta);
@@ -31,13 +31,9 @@ ModFS::Mod::Mod(std::filesystem::path pathOnDisk) {
 }
 
 std::string ModFS::Mod::ReadEntry(std::string entry) {
-	ZipArchiveEntry::Ptr pEntry = this->pArchive->GetEntry(entry);
-	std::istream* decompressStream = pEntry->GetDecompressionStream();
-	std::string fileContent((std::istreambuf_iterator<char>(*decompressStream)), std::istreambuf_iterator<char>());
-	pEntry->CloseDecompressionStream();
-	return fileContent;
+	return this->innerArchive->ReadEntry(entry);
 }
 
-ModFS::Mod ModFS::OpenArchive(std::string pathOnDisk) {
+ModFS::Mod ModFS::OpenArchive(std::filesystem::path pathOnDisk) {
 	return ModFS::Mod(pathOnDisk);
 }
