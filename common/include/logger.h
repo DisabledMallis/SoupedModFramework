@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fmt/core.h>
 #include <fmt/color.h>
+#include "config.h"
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -19,7 +20,8 @@ namespace Logger {
 		DEFAULT = FOREGROUND_INTENSITY | FOREGROUND_GREEN | FOREGROUND_BLUE,
 		SUCCESS = FOREGROUND_INTENSITY | FOREGROUND_GREEN,
 		WARNING = FOREGROUND_INTENSITY | FOREGROUND_RED | FOREGROUND_GREEN,
-		FAILURE = FOREGROUND_INTENSITY | FOREGROUND_RED
+		FAILURE = FOREGROUND_INTENSITY | FOREGROUND_RED,
+		DEBUG = FOREGROUND_RED | FOREGROUND_GREEN
 #else
 		DEFAULT = fmt::color::aqua,
 		SUCCESS = fmt::color::light_green,
@@ -48,5 +50,13 @@ namespace Logger {
 	template <typename... T>
 	void Print(fmt::string_view fomt, T&&... args) {
 		Print<LogLevel::DEFAULT>(fomt, args...);
+	}
+
+	template<typename... T>
+	void Debug(fmt::string_view fomt, T&&... args) {
+		if (Config::GetConfig()->DebugMode() == false) {
+			return;
+		}
+		Print<LogLevel::DEBUG>(fomt, args...);
 	}
 }

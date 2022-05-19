@@ -7,6 +7,7 @@
 #include <SoupSTL.h>
 #include "patcher/patchers/BattleMenuPatcher.h"
 #include <stdjs.h>
+#include <config.h>
 
 static PLH::x64Detour* plhwWinMain;
 static uint64_t owWinMain;
@@ -19,6 +20,10 @@ int __stdcall hkwWinMain(
 	//Move proxy dll back into 'proxies' folder
 	std::filesystem::path cd = std::filesystem::current_path();
 	std::filesystem::rename("./wininet.dll", "./proxies/wininet.dll");
+
+	//Load config
+	Config::GetConfig();
+	Logger::Print("Config loaded");
 
 	/*Game's main, do hooking/patching/etc here*/
 	Logger::Print("Creating hooks...");
@@ -34,6 +39,11 @@ int __stdcall hkwWinMain(
 	Logger::Print("Killing launcher");
 	int retval = system("taskkill /F /T /IM launcher.exe");
 	Logger::Print("Launcher killed & pipe closed");
+
+	Logger::Print("Loading internal patchers...");
+	BattleMenuPatcher* battleMenuPatcher = new BattleMenuPatcher();
+	Patchers::RegisterPatcher(battleMenuPatcher);
+	Logger::Print("Internal patchers loaded");
 
 	//Set up basic JS funcs
 	JSUtils::OnInitialize([]() {
@@ -73,9 +83,6 @@ int __stdcall hkwWinMain(
 	});
 	//Create the runtime & do all init work
 	JSUtils::SetupRuntime();
-
-	BattleMenuPatcher* battleMenuPatcher = new BattleMenuPatcher();
-	Patchers::RegisterPatcher(battleMenuPatcher);
 
 	return PLH::FnCast(owWinMain, hkwWinMain)(
 		hInstance,

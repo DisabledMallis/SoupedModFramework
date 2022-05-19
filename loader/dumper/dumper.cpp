@@ -22,7 +22,7 @@ void Dumper::DumpToDisk(std::string fileName, std::filesystem::path bundlePath, 
 	else {
 		Soup::Bin2::DecryptBytes<Soup::Bin2::INTERNAL>(decryptBuffer, content.size());
 		sDumpData = std::string((char*)decryptBuffer, content.size() - 8); //8 bytes are removed because of checksums or smth
-		Logger::Print("Decrypted {}", fileName);
+		Logger::Debug("Decrypted {}", fileName);
 	}
 
 	std::filesystem::path cd = std::filesystem::current_path();
@@ -33,5 +33,5 @@ void Dumper::DumpToDisk(std::string fileName, std::filesystem::path bundlePath, 
 	dumpStream.open(dumpFile.string(), std::ios::trunc | std::ios::binary);
 	dumpStream << sDumpData;
 	dumpStream.close();
-	Logger::Print("Dumped {}", fileName);
+	Logger::Debug("Dumped {}", fileName);
 }

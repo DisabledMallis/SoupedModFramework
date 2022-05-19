@@ -11,7 +11,7 @@ jsfunction(Patchers::registerPatcher) {
 		JSUtils::JsValue targetFile = jsargv[2];
 		
 		if (!callback.IsValid()) {
-			Logger::Print<Logger::WARNING>("Attemped to register a patcher, but the callback is invalid. Was a function passed?");
+			Logger::Debug("Attemped to register a patcher, but the callback is invalid. Was a function passed?");
 			return JS_INVALID_REFERENCE;
 		}
 
@@ -22,7 +22,7 @@ jsfunction(Patchers::registerPatcher) {
 		return patcherId;
 	}
 	else {
-		Logger::Print<Logger::FAILURE>("souped.registerPatcher called with the incorrect number of arguments");
+		Logger::Debug("souped.registerPatcher called with the incorrect number of arguments");
 	}
 	return patcherId;
 }
@@ -67,12 +67,12 @@ bool Patchers::Patcher::DoPatchwork(std::string, std::string&)
 bool Patchers::JsPatcher::DoPatchwork(std::string fileName, std::string& fileContent)
 {
 	if (!this->jsCallback.IsValid()) {
-		Logger::Print<Logger::WARNING>("A patcher was executed, but the callback is not an object (and as a result cannot be a function). Did we get GC'd?");
+		Logger::Debug("A patcher was executed, but the callback is not an object (and as a result cannot be a function). Did we get GC'd?");
 		return false;
 	}
 
 	if (this->selector.size() == 0) {
-		Logger::Print<Logger::WARNING>("A javascript patcher was invoked with no target selector?");
+		Logger::Debug("A javascript patcher was invoked with no target selector?");
 		return false;
 	}
 	if (fileName.find(this->selector) == std::string::npos) {
@@ -81,25 +81,18 @@ bool Patchers::JsPatcher::DoPatchwork(std::string fileName, std::string& fileCon
 	}
 
 	//Call the function on the ui thread
-	Logger::Print("Invoking patcher callback");
+	Logger::Debug("Invoking patcher callback");
 	JSUtils::JsValue result = this->jsCallback(fileName, fileContent);
-	Logger::Print("Patcher completed");
+	Logger::Debug("Patcher completed");
 	
-	Logger::Print("{} {}", __FUNCTION__, __LINE__);
 	if (result.HasProperty("successful")) {
-		Logger::Print("{} {}", __FUNCTION__, __LINE__);
 		bool success = result.GetProperty("successful");
-		Logger::Print("{} {}", __FUNCTION__, __LINE__);
 		if (success) {
-			Logger::Print("{} {}", __FUNCTION__, __LINE__);
 			if (result.HasProperty("data")) {
-				Logger::Print("{} {}", __FUNCTION__, __LINE__);
 				fileContent = result.GetProperty("data").cpp_str();
-				Logger::Print("{} {}", __FUNCTION__, __LINE__);
 				return true;
 			}
 			else {
-				Logger::Print("{} {}", __FUNCTION__, __LINE__);
 				JSUtils::ThrowException("Patcher result missing 'data' property");
 				return false;
 			}

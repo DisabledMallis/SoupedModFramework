@@ -31,13 +31,13 @@ int hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32
 	//Get the entry & path for the current file
 	std::string fileName = bundleData->GetName().cpp_str();
 	int ret = PLH::FnCast(oDecompressFile, hkDecompressFile)(pZipIterator, lpReadBuffer, bufferSize);
-	Logger::Print("Decompressed {}", fileName);
+	Logger::Debug("Decompressed {}", fileName);
 
 	char file_header[] = "%BIN_2.0";
 	if (bufferSize < 8 || memcmp(file_header, lpReadBuffer, sizeof(file_header) - 1) != 0)
 	{
 		//File isn't BIN2 encrypted
-		Logger::Print("{} is not BIN2 encrypted", fileName);
+		Logger::Debug("{} is not BIN2 encrypted", fileName);
 	}
 	else {
 		Dumper::DumpToDisk(fileName, bundlePath, std::string(lpReadBuffer, bufferSize));
@@ -66,7 +66,7 @@ void hkDecryptBytes(uint8_t** bytes) {
 	patchworkStack.pop();
 
 	//Print we are patching it
-	Logger::Print("Patching {}", targetFile);
+	Logger::Debug("Patching {}", targetFile);
 
 	/*Patch the file*/
 	std::string fileContent = std::string(*(char**)bytes, (size_t)(bytes[1] - bytes[0]));
@@ -75,14 +75,14 @@ void hkDecryptBytes(uint8_t** bytes) {
 	//Safety checks
 	size_t bufferSize = bytes[1] - bytes[0];
 	if (bufferSize < fileContent.size()) {
-		Logger::Print<Logger::WARNING>("WARNING: There is not enough space allocated to apply this patch!");
+		Logger::Debug("WARNING: There is not enough space allocated to apply this patch!");
 	}
 
 	//Place the patched data back into the buffer
 	memcpy(bytes[0], fileContent.c_str(), bytes[1] - bytes[0]);
 
 	//Print we finished patching
-	Logger::Print("Patched {}", targetFile);
+	Logger::Debug("Patched {}", targetFile);
 
 	patchworkMutex.unlock();
 }

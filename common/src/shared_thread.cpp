@@ -19,7 +19,7 @@ shared_thread::shared_thread(int timeoutMillis)
 				if (job)
 					job();
 				else
-					Logger::Print<Logger::WARNING>("The next job was null, skipping...");
+					Logger::Debug("The next job was null, skipping...");
 				workerLock.lock();
 				this->workQueue.pop_front();
 				workerLock.unlock();
@@ -43,7 +43,7 @@ void shared_thread::AwaitCompletion()
 	//If we're on the same thread theres no reason to wait
 	//Plus a side effect would be a deadlock
 	if (!workingLock.try_lock()) {
-		Logger::Print<Logger::WARNING>("Work is being awaited from the same thread. This will cause a deadlock, so the work will not be awaited");
+		Logger::Debug("Work is being awaited from the same thread. This will cause a deadlock, so the work will not be awaited");
 		return;
 	}
 	workingLock.unlock();
@@ -56,8 +56,8 @@ void shared_thread::DoWork(std::function<void()> work)
 {
 	//Warning if you add work from worker thread!
 	if (!workingLock.try_lock()) {
-		Logger::Print<Logger::WARNING>("Work was added from a shared thread to the same shared thread. DO NOT await for work to complete, or there will be a deadlock!!");
-		Logger::Print<Logger::WARNING>("Running work on the current thread to avoid deadlocks (this is likely expected anyways)");
+		Logger::Debug("Work was added from a shared thread to the same shared thread. DO NOT await for work to complete, or there will be a deadlock!!");
+		Logger::Debug("Running work on the current thread to avoid deadlocks (this is likely expected anyways)");
 		work();
 		return;
 	}

@@ -7,6 +7,7 @@
 using namespace JSUtils;
 
 static shared_thread jsThread(10);
+static std::thread conListener;
 static JsRuntimeHandle runtime;
 static JsContextRef defaultContext;
 static JsContextRef currentContext;
@@ -21,6 +22,17 @@ void JSUtils::SetupRuntime() {
 	for (auto task : initTasks) {
 		task();
 	}
+	conListener = std::thread([&]() {
+		while (true) {
+			std::string code;
+			std::getline(std::cin, code);
+			JsValue result = JSUtils::RunCode("console", code);
+			if (result.IsValid()) {
+				Logger::Print(result.cpp_str());
+			}
+		}
+	});
+	conListener.detach();
 }
 void JSUtils::OnInitialize(std::function<void()> task) {
 	initTasks.push_back(task);
@@ -54,12 +66,12 @@ JsValue& JSUtils::GetGlobalObject() {
 		if (global.internalRef == JS_INVALID_REFERENCE) {
 			JsErrorCode jsErr = JsGetGlobalObject(&global.internalRef);
 			if (jsErr != JsNoError) {
-				Logger::Print<Logger::WARNING>("Error whilst retrieving global object: {}", (void*)jsErr);
+				Logger::Debug("Error whilst retrieving global object: {}", (void*)jsErr);
 				JsValue exception;
 				JsErrorCode exErr = JsGetAndClearException(&exception.internalRef);
 				if (exErr == JsNoError) {
 					std::string message = exception.GetProperty("message").cpp_str();
-					Logger::Print<Logger::FAILURE>("JS Error: {}", message);
+					Logger::Debug("JS Error: {}", message);
 				}
 			}
 		}
@@ -290,7 +302,7 @@ std::string JsValue::cpp_str() {
 		}
 		string = (char*)malloc(length + 1);
 		if (!string) {
-			throw std::runtime_error("Failed to allocate string buffer");
+			Logger::Debug("Failed to allocate string buffer");
 		}
 		JsErrorCode copyErr = JsCopyString(stringValue, string, length, nullptr);
 		if (copyErr != JsNoError) {
@@ -344,9 +356,9 @@ JsValue::operator double() {
 			if (valType == JsNumber) {
 				JsNumberToDouble(this->internalRef, &result);
 			}
-			throw std::exception("Value isn't a number");
+			Logger::Debug("Value isn't a number");
 		}
-		throw std::exception("Value isn't valid");
+		Logger::Debug("Value isn't valid");
 	});
 	jsThread.AwaitCompletion();
 	return result;
