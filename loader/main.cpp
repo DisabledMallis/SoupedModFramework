@@ -86,31 +86,14 @@ int __stdcall hkwWinMain(
 	JSUtils::SetupRuntime();
 
 	//Load all mods
-	std::vector<std::filesystem::path> modPaths;
-	std::filesystem::path modsDir = cd / "mods";
-	if (!std::filesystem::exists(modsDir)) {
-		std::filesystem::create_directories(modsDir);
-	}
-	for (auto& mod : std::filesystem::directory_iterator(modsDir)) {
-		if (!mod.is_directory()) {
-			if (mod.path().extension() == ".smf") {
-				modPaths.push_back(mod);
-			}
-		}
-	}
+	std::vector<ModFS::Mod> allMods = ModFS::LoadAllMods(cd);
 
-	for (auto& modPath : modPaths) {
-		try {
-			ModFS::Mod mod = ModFS::OpenArchive(modPath);
-			Logger::Print("Loading {} version {}", mod.meta.name, mod.meta.version);
-			for (auto& script : mod.meta.scripts) {
-				Logger::Print("Loading script: {}", script);
-				std::string scriptCode = mod.ReadEntry(script);
-				JSUtils::RunCode(modPath.filename().string() + "/" + script, scriptCode);
-			}
-		}
-		catch (std::exception& ex) {
-			Logger::Print<Logger::FAILURE>("Failed to load mod {}: {}", modPath.filename().string(), std::string(ex.what()));
+	for (auto& mod : allMods) {
+		Logger::Print("Loading {} version {}", mod.meta.name, mod.meta.version);
+		for (auto& script : mod.meta.scripts) {
+			Logger::Debug("Loading script: {}", script);
+			std::string scriptCode = mod.ReadEntry(script);
+			JSUtils::RunCode(mod.meta.name + "/" + script, scriptCode);
 		}
 	}
 

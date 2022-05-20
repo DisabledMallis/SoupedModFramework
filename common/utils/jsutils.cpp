@@ -159,6 +159,7 @@ JsValue::JsValue(int value) {
 	this->internalRef = JS_INVALID_REFERENCE;
 	jsThread.DoWork([&]() {
 		JsErrorCode err = JsIntToNumber(value, &this->internalRef);
+		JsAddRef(this->internalRef, nullptr);
 		if (err != JsNoError) {
 			CATCHERROR(err);
 		}
@@ -172,6 +173,7 @@ JsValue::JsValue(std::string text) {
 	this->internalRef = JS_INVALID_REFERENCE;
 	jsThread.DoWork([&]() {
 		JsErrorCode err = JsCreateString(text.c_str(), text.length(), &this->internalRef);
+		JsAddRef(this->internalRef, nullptr);
 		if (err != JsNoError) {
 			CATCHERROR(err);
 		}
@@ -183,6 +185,7 @@ JsValue::JsValue(std::string objName, bool isObject) {
 	jsThread.DoWork([&]() {
 		if (isObject) {
 			JsCreateObject(&this->internalRef);
+			JsAddRef(this->internalRef, nullptr);
 		}
 		else {
 			JsValue(objName);
@@ -194,13 +197,19 @@ JsValue::JsValue(JsNativeFunction func) {
 	this->internalRef = JS_INVALID_REFERENCE;
 	jsThread.DoWork([&]() {
 		JsErrorCode err = JsCreateFunction(func, nullptr, &this->internalRef);
+		JsAddRef(this->internalRef, nullptr);
 		if (err != JsNoError) {
 			CATCHERROR(err);
 		}
 	});
 	jsThread.AwaitCompletion();
 }
-JsValue::~JsValue() {}
+JsValue::~JsValue() {
+	//jsThread.DoWork([&]() {
+	//	JsRelease(this->internalRef, nullptr); 
+	//});
+	//jsThread.AwaitCompletion();
+}
 bool JsValue::IsValid() {
 	if (!this) {
 		return false;

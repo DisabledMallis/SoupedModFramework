@@ -77,7 +77,12 @@ std::vector<ModFS::Mod> ModFS::LoadAllMods(std::filesystem::path cd)
 
 	std::vector<ModFS::Mod> result;
 	for (auto& modPath : modPaths) {
-		result.push_back(ModFS::OpenArchive(modPath));
+		try {
+			result.push_back(ModFS::OpenArchive(modPath));
+		}
+		catch (std::exception& ex) {
+			Logger::Print<Logger::FAILURE>("Failed to load mod {}: {}", modPath.filename().string(), std::string(ex.what()));
+		}
 	}
 	return result;
 }

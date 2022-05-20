@@ -38,7 +38,7 @@ std::string ZipUtils::ArchiveWrapper::ReadEntry(std::string path)
 			break;
 		}
 		std::string entryPathName = archive_entry_pathname(pEntry);
-		Logger::Print("Entry Name: {}", entryPathName);
+		Logger::Debug("Entry Name: {}", entryPathName);
 		if (entryPathName == path) {
 			const char* buff;
 			size_t size;
