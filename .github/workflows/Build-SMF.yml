@@ -15,6 +15,14 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
       
+    - name: Setup MSVC Developer Command Prompt
+      # You may pin to the exact commit or the version.
+      # uses: TheMrMilchmann/setup-msvc-dev@a33f7f14adeb320d6e329c9d1842af35a3e07931
+      uses: TheMrMilchmann/setup-msvc-dev@v1.0.0
+      with:
+        # The target architecture
+        arch: x64
+      
     - name: Build
       uses: ashutoshvarma/action-cmake-build@v1
       with:
