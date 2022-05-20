@@ -31,7 +31,7 @@ jobs:
       run: cmake -G "Ninja" -DCMAKE_BUILD_TYPE:STRING="Release" -DCMAKE_INSTALL_PREFIX:PATH="./out/install/x64-Release" -DCMAKE_BUILD_PREFIX:PATH="./out/build/x64-Release" -S.
       
     - name: Build SMF
-      run: cmake --build ./out/build/x64-Release --config Release
+      run: cmake --build .
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v3
