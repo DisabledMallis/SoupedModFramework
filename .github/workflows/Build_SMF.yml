@@ -1,0 +1,41 @@
+name: Build SMF
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      
+    - name: Setup MSVC Developer Command Prompt
+      # You may pin to the exact commit or the version.
+      # uses: TheMrMilchmann/setup-msvc-dev@a33f7f14adeb320d6e329c9d1842af35a3e07931
+      uses: TheMrMilchmann/setup-msvc-dev@v1.0.0
+      with:
+        # The target architecture
+        arch: x64
+      
+    - name: Install CMake
+      # You may pin to the exact commit or the version.
+      # uses: Symbitic/install-cmake@301e932c0011b8d12d8bf33d4975fd1e17972709
+      uses: Symbitic/install-cmake@v0.1.0
+      with:
+        # Version of CMake to install
+        cmake: 3.20
+        # Version of ninja-build to install
+        ninja: 1.9
+        # Override default platform with one of [win, mac, linux]
+        platform: win
+        
+    - name: Run CMake
+      # You may pin to the exact commit or the version.
+      # uses: lukka/run-cmake@e265d767c12ee0dc03becaa1d55155db4beb45f6
+      uses: lukka/run-cmake@v10.0
