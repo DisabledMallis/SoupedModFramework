@@ -28,7 +28,7 @@ jobs:
       uses: lukka/get-cmake@latest
         
     - name: Cache CMake
-      run: cmake -B./out/build/x64-Release -S.
+      run: cmake -DCMAKE_BUILD_TYPE=Release -B./out/build/x64-Release -S.
       
     - name: Build
       run: cmake --build ./out/build/x64-Release --config Release
