@@ -111,6 +111,7 @@ add_subdirectory(proxy)
 add_subdirectory(soupsdk)
 
 # Create release ready folders
+execute_process(COMMAND mkdir "${CMAKE_CURRENT_LIST_DIR}/build")
 execute_process(COMMAND mkdir ${FINAL_DIR})
 execute_process(COMMAND mkdir ${FINAL_DIR}/loaders)
 execute_process(COMMAND mkdir ${FINAL_DIR}/proxies)

@@ -27,8 +27,8 @@ jobs:
       # Using 'latest' branch, the most recent CMake and ninja are installed.
       uses: lukka/get-cmake@latest
         
-    - name: Cache CMake
+    - name: Generate CMake cache & Build Dependencies
       run: cmake -DCMAKE_BUILD_TYPE=Release -B./out/build/x64-Release -S.
       
-    - name: Build
+    - name: Build SMF
       run: cmake --build ./out/build/x64-Release --config Release
