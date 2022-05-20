@@ -26,6 +26,12 @@ namespace JSUtils {
 	/*Interop*/
 	class JsValue;
 	JsValue& GetGlobalObject();
+	/*
+	* JSUtils::RunCode
+	* Returns: The code's result
+	* Parameter 1: Script name (file path)
+	* Parameter 2: Script code
+	*/
 	JsValue RunCode(std::string, std::string);
 	JsValue RunFile(std::filesystem::path);
 	JsErrorCode JsCallSafely(JsValueRef func, JsValueRef* argv, unsigned short argc, JsValueRef* result);

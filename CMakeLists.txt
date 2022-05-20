@@ -95,6 +95,7 @@ include_directories("${CMAKE_CURRENT_LIST_DIR}/common/include/")
 include_directories("${CMAKE_CURRENT_LIST_DIR}/common/glad/include/")
 include_directories("${CMAKE_CURRENT_LIST_DIR}/common/imgui/")
 include_directories("${CMAKE_CURRENT_LIST_DIR}/loader/include/")
+include_directories("${CMAKE_CURRENT_LIST_DIR}/modfs/include/")
 include_directories("${CMAKE_CURRENT_LIST_DIR}/soupsdk/include/")
 
 # Export all symbols (ensures .lib files are created)

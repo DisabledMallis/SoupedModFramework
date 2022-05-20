@@ -2,23 +2,10 @@
 #include <logger.h>
 
 int main(const char* argv, int argc) {
-	std::vector<std::filesystem::path> modPaths;
-
 	std::filesystem::path cd = std::filesystem::current_path();
-	std::filesystem::path modsDir = cd / "mods";
-	if (!std::filesystem::exists(modsDir)) {
-		Logger::Print<Logger::FAILURE>("No 'mods' directory to explore");
-		return 1;
-	}
-	for (auto& mod : std::filesystem::directory_iterator(modsDir)) {
-		if (!mod.is_directory()) {
-			modPaths.push_back(mod);
-		}
-	}
+	std::vector<ModFS::Mod> allMods = ModFS::LoadAllMods(cd);
 
-	for (auto& modPath : modPaths) {
-		Logger::Print("Found: {}", modPath.filename().string());
-		ModFS::Mod mod = ModFS::OpenArchive(modPath);
+	for (auto& mod : allMods) {
 		for (auto& author : mod.meta.authors) {
 			Logger::Print("Author: {}", author);
 		}

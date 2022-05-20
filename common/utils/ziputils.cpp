@@ -55,7 +55,7 @@ std::string ZipUtils::ArchiveWrapper::ReadEntry(std::string path)
 			if (r == ARCHIVE_FAILED) {
 				int errNum = archive_errno(tempArchive);
 				const char* errStr = archive_error_string(tempArchive);
-				Logger::Print<Logger::FAILURE>("Failed to open archive entry '{}': {}", path, std::string(errStr));
+				Logger::Print<Logger::FAILURE>("Failed to open archive entry '{}': {} (Make sure you are using 'store' for compression in 7zip!)", path, std::string(errStr));
 				break;
 			}
 			if (r == ARCHIVE_FATAL) {

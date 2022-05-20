@@ -23,37 +23,3 @@ souped.registerJsonPatcher = function (callback, filename) {
         return { successful: false, data: data };
     }, filename);
 }
-
-function dartPatch(data) {
-    console.warn("Dart MokeY!!");
-    console.log("Dart type: " + data["type"]);
-    var towerVars = data["variables"];
-    for (var i = 0; i < towerVars.length; i++) {
-        var currentVar = towerVars[i];
-        if (currentVar["key"] == "range") {
-            currentVar["variable"]["value"] = 99;
-        }
-        if (currentVar["key"] == "proj_radius") {
-            currentVar["variable"]["value"] = 99;
-        }
-        if (currentVar["key"] == "reload_time") {
-            currentVar["variable"]["value"] = 0.01;
-        }
-        towerVars[i] = currentVar;
-    }
-
-    data["variables"] = towerVars;
-    var towerNodes = data["nodes"];
-    for (var i = 0; i < towerNodes.length; i++) {
-        var currentNode = towerNodes[i];
-        if (currentNode["id"] == 0) {
-            currentNode["cost"] = 0;
-            console.warn("DartMonkey patch successfully!");
-        }
-        towerNodes[i] = currentNode;
-    }
-    data["nodes"] = towerNodes;
-    return { successful: true, data: data };
-}
-
-souped.registerJsonPatcher(dartPatch, "dart_monkey.tower_blueprint");
