@@ -23,14 +23,14 @@ static bool initUi = false;
 
 static PLH::x64Detour* plhDecompressFile;
 static uint64_t oDecompressFile = Memory::FindSig(Soup::Signatures::SIG_ZIPCPP_DECOMPRESSFILE);
-int hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32_t bufferSize) {
+void* hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32_t bufferSize) {
 	//Get the bundle (.jet) file path
 	std::filesystem::path bundlePath = pZipIterator->psArchivePath->cpp_str();
 	//Get the bundle information
 	Soup::ZipEntry* bundleData = pZipIterator->pZipEntry;
 	//Get the entry & path for the current file
 	std::string fileName = bundleData->GetName().cpp_str();
-	int ret = PLH::FnCast(oDecompressFile, hkDecompressFile)(pZipIterator, lpReadBuffer, bufferSize);
+	void* ret = PLH::FnCast(oDecompressFile, hkDecompressFile)(pZipIterator, lpReadBuffer, bufferSize);
 	Logger::Debug("Decompressed {}", fileName);
 
 	char file_header[] = "%BIN_2.0";
@@ -40,6 +40,7 @@ int hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32
 		Logger::Debug("{} is not BIN2 encrypted", fileName);
 	}
 	else {
+		Logger::Debug("{} IS BIN2 encrypted", fileName);
 		Dumper::DumpToDisk(fileName, bundlePath, std::string(lpReadBuffer, bufferSize));
 		patchworkMutex.lock();
 		patchworkStack.push(fileName);
@@ -51,14 +52,14 @@ int hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32
 
 static PLH::x64Detour* plhDecryptBytes;
 static uint64_t oDecryptBytes = Memory::FindSig(Soup::Signatures::SIG_BIN2_DECRYPTBYTES);
-void hkDecryptBytes(uint8_t** bytes) {
-	PLH::FnCast(oDecryptBytes, hkDecryptBytes)(bytes);
+void* hkDecryptBytes(uint8_t** bytes) {
+	void* result = PLH::FnCast(oDecryptBytes, hkDecryptBytes)(bytes);
 
 	patchworkMutex.lock();
 	//If theres nothing to patch we're done
 	if (patchworkStack.empty()) {
 		patchworkMutex.unlock();
-		return;
+		return result;
 	}
 	//Get the first file in the stack
 	std::string targetFile = patchworkStack.top();
@@ -79,12 +80,13 @@ void hkDecryptBytes(uint8_t** bytes) {
 	}
 
 	//Place the patched data back into the buffer
-	memcpy(bytes[0], fileContent.c_str(), bufferSize);
+	memcpy_s(bytes[0], bytes[1] - bytes[0], fileContent.c_str(), fileContent.size());
 
 	//Print we finished patching
 	Logger::Debug("Patched {}", targetFile);
 
 	patchworkMutex.unlock();
+	return result;
 }
 
 static HWND hGameWindow;
