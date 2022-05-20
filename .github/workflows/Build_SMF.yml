@@ -28,7 +28,7 @@ jobs:
       uses: lukka/get-cmake@latest
         
     - name: Generate CMake cache & Build Dependencies
-      run: cmake -DCMAKE_BUILD_TYPE=Release -B./out/build/x64-Release -S.
+      run: cmake -G "Ninja" -DCMAKE_BUILD_TYPE:STRING="Release" -DCMAKE_INSTALL_PREFIX:PATH="./out/install/x64-Release" -DCMAKE_BUILD_PREFIX:PATH="./out/build/x64-Release" -S.
       
     - name: Build SMF
       run: cmake --build ./out/build/x64-Release --config Release

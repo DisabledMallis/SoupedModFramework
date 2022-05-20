@@ -1,4 +1,3 @@
-if(BUILD_LAUNCHER)
 add_custom_target(Launcher ALL
 	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
 	COMMAND npm install .
@@ -11,4 +10,3 @@ add_custom_command(
 		${CMAKE_CURRENT_LIST_DIR}/src-tauri/target/release/launcher.exe
 		${FINAL_DIR}/launcher.exe
 )
-endif()
