@@ -28,10 +28,6 @@ jobs:
       # uses: Symbitic/install-cmake@301e932c0011b8d12d8bf33d4975fd1e17972709
       uses: Symbitic/install-cmake@v0.1.0
       with:
-        # Version of CMake to install
-        cmake: 3.20
-        # Version of ninja-build to install
-        ninja: 1.9
         # Override default platform with one of [win, mac, linux]
         platform: win
         
@@ -39,3 +35,5 @@ jobs:
       # You may pin to the exact commit or the version.
       # uses: lukka/run-cmake@e265d767c12ee0dc03becaa1d55155db4beb45f6
       uses: lukka/run-cmake@v10.0
+      with:
+        buildPreset: 'x64-Release'
