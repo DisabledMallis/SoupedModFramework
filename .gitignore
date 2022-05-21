@@ -2,5 +2,13 @@
 out/
 build/
 .vscode/
+.lite_workspace.lua
 node_modules/
+bin/
 dist/
+launcher/.github/
+launcher/.tmp/
+neutralino.js
+.storage
+*.log
+config.json

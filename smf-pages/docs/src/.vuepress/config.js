@@ -65,16 +65,5 @@ module.exports = {
   plugins: [
     '@vuepress/plugin-back-to-top',
     '@vuepress/plugin-medium-zoom',
-  ],
-
-  async additionalPages() {
-    return [
-      {
-        path: "/launcher.html",
-        frontmatter: {
-          layout: 'Launcher'
-        }
-      }
-    ]
-  }
+  ]
 }
