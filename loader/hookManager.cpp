@@ -33,20 +33,24 @@ void* hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint
 	void* ret = PLH::FnCast(oDecompressFile, hkDecompressFile)(pZipIterator, lpReadBuffer, bufferSize);
 	Logger::Debug("Decompressed {}", fileName);
 
-	char file_header[] = "%BIN_2.0";
-	if (bufferSize < 8 || memcmp(file_header, lpReadBuffer, sizeof(file_header) - 1) != 0)
+	static char bin2_header[] = "%BIN_2.0";
+	static char jpng_header[] = "%JPNG001";
+	if (bufferSize > 8 || memcmp(bin2_header, lpReadBuffer, sizeof(bin2_header) - 1) == 0)
 	{
-		//File isn't BIN2 encrypted
-		Logger::Debug("{} is not BIN2 encrypted", fileName);
-	}
-	else {
 		Logger::Debug("{} IS BIN2 encrypted", fileName);
 		Dumper::DumpToDisk(fileName, bundlePath, std::string(lpReadBuffer, bufferSize));
 		patchworkMutex.lock();
 		patchworkStack.push(fileName);
 		patchworkMutex.unlock();
+		return ret;
 	}
-
+	if (bufferSize > 8 || memcmp(jpng_header, lpReadBuffer, sizeof(jpng_header) - 1) == 0)
+	{
+		Logger::Debug("{} IS JPNG format", fileName);
+		Dumper::DumpToDisk(fileName, bundlePath, std::string(lpReadBuffer, bufferSize));
+		return ret;
+	}
+	Logger::Debug("{} is not BIN2 nor JPNG format", fileName);
 	return ret;
 }
 
