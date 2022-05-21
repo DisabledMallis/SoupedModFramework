@@ -35,7 +35,7 @@ void* hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint
 
 	static char bin2_header[] = "%BIN_2.0";
 	static char jpng_header[] = "%JPNG001";
-	if (bufferSize > 8 || memcmp(bin2_header, lpReadBuffer, sizeof(bin2_header) - 1) == 0)
+	if (memcmp(bin2_header, lpReadBuffer, sizeof(bin2_header) - 1) == 0)
 	{
 		Logger::Debug("{} IS BIN2 encrypted", fileName);
 		Dumper::DumpToDisk(fileName, bundlePath, std::string(lpReadBuffer, bufferSize));
@@ -44,7 +44,7 @@ void* hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint
 		patchworkMutex.unlock();
 		return ret;
 	}
-	if (bufferSize > 8 || memcmp(jpng_header, lpReadBuffer, sizeof(jpng_header) - 1) == 0)
+	if (memcmp(jpng_header, lpReadBuffer, sizeof(jpng_header) - 1) == 0)
 	{
 		Logger::Debug("{} IS JPNG format", fileName);
 		Dumper::DumpToDisk(fileName, bundlePath, std::string(lpReadBuffer, bufferSize));
@@ -84,7 +84,8 @@ void* hkDecryptBytes(uint8_t** bytes) {
 	}
 
 	//Place the patched data back into the buffer
-	memcpy_s(bytes[0], bytes[1] - bytes[0], fileContent.c_str(), fileContent.size());
+	memset(bytes[0], 0, bufferSize);
+	memcpy_s(bytes[0], bufferSize, fileContent.c_str(), fileContent.size());
 
 	//Print we finished patching
 	Logger::Debug("Patched {}", targetFile);
