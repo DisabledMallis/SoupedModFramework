@@ -103,6 +103,7 @@ JsErrorCode JSUtils::JsCallSafely(JsValueRef func, JsValueRef* argv, unsigned sh
 	jsThread.DoWork([&]() {
 		JSUtils::SetCurrentContext(JSUtils::GetDefaultContext());
 		jsErr = JsCallFunction(func, argv, argc, result);
+		JsAddRef(result, nullptr);
 		if (jsErr != JsNoError) {
 			CATCHERROR(jsErr);
 		}
@@ -293,6 +294,10 @@ void JsValue::SetProperty(std::string propName, JsValue& value) {
 	jsThread.AwaitCompletion();
 }
 std::string JsValue::cpp_str() {
+	if (!this->IsValid()) {
+		ThrowException("Cannot convert value to std::string, it isnt valid!");
+		return "undefined";
+	}
 	char* string = nullptr;
 	size_t length;
 	jsThread.DoWork([&]() {
@@ -332,7 +337,9 @@ JsValue::operator bool() {
 	jsThread.DoWork([&]() {
 		if (this->IsValid()) {
 			JsValueType valType;
-			JsGetValueType(this->internalRef, &valType);
+			JsErrorCode typeErr = JsGetValueType(this->internalRef, &valType);
+			if(typeErr != JsNoError)
+				CATCHERROR(typeErr);
 			if (valType == JsBoolean) {
 				JsBooleanToBool(this->internalRef, &result);
 				return;
@@ -351,13 +358,15 @@ JsValue::operator int() {
 	jsThread.DoWork([&]() {
 		if (this->IsValid()) {
 			JsValueType valType;
-			JsGetValueType(this->internalRef, &valType);
+			JsErrorCode typeErr = JsGetValueType(this->internalRef, &valType);
+			if (typeErr != JsNoError)
+				CATCHERROR(typeErr);
 			if (valType == JsNumber) {
 				JsNumberToInt(this->internalRef, &result);
 			}
-			throw std::exception("Value isn't a number");
+			ThrowException("Value isn't a number");
 		}
-		throw std::exception("Value isn't valid");
+		ThrowException("Value isn't valid");
 	});
 	jsThread.AwaitCompletion();
 	return result;
@@ -367,13 +376,15 @@ JsValue::operator double() {
 	jsThread.DoWork([&]() {
 		if (this->IsValid()) {
 			JsValueType valType;
-			JsGetValueType(this->internalRef, &valType);
+			JsErrorCode typeErr = JsGetValueType(this->internalRef, &valType);
+			if (typeErr != JsNoError)
+				CATCHERROR(typeErr);
 			if (valType == JsNumber) {
 				JsNumberToDouble(this->internalRef, &result);
 			}
-			Logger::Debug("Value isn't a number");
+			ThrowException("Value isn't a number");
 		}
-		Logger::Debug("Value isn't valid");
+		ThrowException("Value isn't valid");
 	});
 	jsThread.AwaitCompletion();
 	return result;
