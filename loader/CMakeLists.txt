@@ -4,7 +4,7 @@ target_sources(Loader PRIVATE
 	"scripts/souped.js"
 	"hookManager.cpp"
 	"main.cpp"
-)
+ "ui/ui.h" "ui/ui.cpp")
 
 add_subdirectory(dumper)
 add_subdirectory(patcher)

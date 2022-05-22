@@ -74,8 +74,8 @@ auto Memory::FindSig(long long rangeStart, long long rangeEnd, const char* patte
 	while (sanitizedPat[0] == '?' && sanitizedPat[1] == '?') {
 		sanitizedPat = sanitizedPat.substr(3);
 		skips++;
-		Logger::Print("Sig skips: {}", skips);
-		Logger::Print("Current sig: {}", sanitizedPat);
+		Logger::Debug("Sig skips: {}", skips);
+		Logger::Debug("Current sig: {}", sanitizedPat);
 	}
 	const char* pat = sanitizedPat.c_str();
 	long long firstMatch = 0;

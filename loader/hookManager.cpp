@@ -17,6 +17,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <Profile.h>
+#include "ui/ui.h"
+#include <ShlObj_core.h>
 
 std::stack<std::string> patchworkStack;
 std::mutex patchworkMutex;
@@ -133,6 +135,15 @@ bool hkSwapBuffers(HDC hdc, int b) {
 		ImGui::StyleColorsDark();
 		ImGui::CaptureMouseFromApp();
 
+		ImGuiIO& io = ImGui::GetIO();
+		io.Fonts->Clear();
+		char fontsPath[MAX_PATH];
+		SHGetFolderPathA(NULL, CSIDL_FONTS, NULL, NULL, fontsPath);
+		std::string arial_path = std::string(std::string(fontsPath) + "/Calibril.ttf");
+		io.Fonts->AddFontFromFileTTF(arial_path.c_str(), 16);
+		io.Fonts->AddFontFromFileTTF(arial_path.c_str(), 20);
+		io.Fonts->Build();
+
 		initUi = true;
 	}
 
@@ -145,6 +156,8 @@ bool hkSwapBuffers(HDC hdc, int b) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
+
+	UI::Render();
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

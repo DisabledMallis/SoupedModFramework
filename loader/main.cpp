@@ -9,6 +9,7 @@
 #include <stdjs.h>
 #include <config.h>
 #include <ModFS.h>
+#include "ui/ui.h"
 
 static PLH::x64Detour* plhwWinMain;
 static uint64_t owWinMain;
@@ -73,7 +74,9 @@ int __stdcall hkwWinMain(
 		JSUtils::JsValue souped = JSUtils::JsValue("souped", true);
 
 		JSUtils::JsValue registerPatcher = JSUtils::JsValue((JsNativeFunction)Patchers::registerPatcher);
+		JSUtils::JsValue notify = JSUtils::JsValue((JsNativeFunction)UI::JsNotify);
 		souped.SetProperty("registerPatcher", registerPatcher);
+		souped.SetProperty("notify", notify);
 
 		global.SetProperty("souped", souped);
 
