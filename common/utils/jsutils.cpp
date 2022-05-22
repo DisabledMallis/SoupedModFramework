@@ -97,6 +97,9 @@ JsValue JSUtils::RunFile(std::filesystem::path file) {
 }
 JsErrorCode JSUtils::JsCallSafely(JsValueRef func, JsValueRef* argv, unsigned short argc, JsValueRef* result) {
 	JsErrorCode jsErr;
+	for (int i = 0; i < argc; i++) {
+		JsAddRef(argv[i], nullptr);
+	}
 	jsThread.DoWork([&]() {
 		JSUtils::SetCurrentContext(JSUtils::GetDefaultContext());
 		jsErr = JsCallFunction(func, argv, argc, result);
@@ -105,6 +108,9 @@ JsErrorCode JSUtils::JsCallSafely(JsValueRef func, JsValueRef* argv, unsigned sh
 		}
 	});
 	jsThread.AwaitCompletion();
+	for (int i = 0; i < argc; i++) {
+		JsRelease(argv[i], nullptr);
+	}
 	return jsErr;
 }
 /*

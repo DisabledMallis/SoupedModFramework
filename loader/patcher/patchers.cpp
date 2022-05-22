@@ -90,17 +90,21 @@ bool Patchers::JsPatcher::DoPatchwork(std::string fileName, std::string& fileCon
 		if (success) {
 			if (result.HasProperty("data")) {
 				fileContent = result.GetProperty("data").cpp_str();
+				JsRelease(result.internalRef, nullptr);
 				return true;
 			}
 			else {
+				JsRelease(result.internalRef, nullptr);
 				JSUtils::ThrowException("Patcher result missing 'data' property");
 				return false;
 			}
 		}
 		else {
+			JsRelease(result.internalRef, nullptr);
 			return false;
 		}
 	}
+	JsRelease(result.internalRef, nullptr);
 	JSUtils::ThrowException("Patchers must return an object with the fields 'successful' and 'data'");
 	return false;
 }

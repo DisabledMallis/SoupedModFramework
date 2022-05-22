@@ -73,10 +73,15 @@ namespace JSUtils {
 			([&](auto& arg)
 				{
 					args[i+1] = JsValue(arg).internalRef;
+					JsAddRef(args[i + 1], nullptr);
 					i++;
 				} (argv), ...);
 			JsValue resultVal;
 			JsErrorCode jsErrC = JSUtils::JsCallSafely(this->internalRef, args, argc+1, &resultVal.internalRef);
+			for (JsValueRef arg : args) {
+				JsRelease(arg, nullptr);
+			}
+			JsAddRef(resultVal.internalRef, nullptr);
 			return resultVal;
 		}
 	};
