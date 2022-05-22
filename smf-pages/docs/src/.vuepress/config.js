@@ -41,8 +41,8 @@ module.exports = {
         link: '/guide/',
       },
       {
-        text: 'Config',
-        link: '/config/'
+        text: 'Develop',
+        link: '/develop/'
       }
     ],
     sidebar: {
@@ -53,6 +53,15 @@ module.exports = {
           children: [
             '',
             'Install'
+          ]
+        }
+      ],
+      '/develop/': [
+        {
+          title: 'Developers',
+          collapsable: false,
+          children: [
+            ''
           ]
         }
       ],
