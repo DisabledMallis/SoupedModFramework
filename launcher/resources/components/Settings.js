@@ -14,6 +14,8 @@ export default {
 	template: `
 		<div class="settings">
 			<BoolSetting settingName="Debug Mode" settingId="debug"/>
+			<BoolSetting settingName="Unlock all towers (and heroes)" settingId="unlockTowers"/>
+			<BoolSetting settingName="Unlock all upgrades" settingId="unlockUpgrades"/>
 		</div>
 	`
 }

@@ -33,7 +33,7 @@ void Config::ResetConfig() {
 	SaveConfig(newConf);
 }
 
-bool Config::DebugMode() {
+bool Config::ReadBool(std::string name) {
 	if (!this) {
 		return false;
 	}
@@ -43,5 +43,17 @@ bool Config::DebugMode() {
 	if (this->data.empty()) {
 		return false;
 	}
-	return this->data["debug"];
+	return this->data[name];
+}
+
+bool Config::DebugMode() {
+	return this->ReadBool("debug");
+}
+
+bool Config::UnlockTowers() {
+	return this->ReadBool("unlockTowers");
+}
+
+bool Config::UnlockUpgrades() {
+	return this->ReadBool("unlockUpgrades");
 }

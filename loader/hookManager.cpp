@@ -16,6 +16,7 @@
 #include <imgui_impl_win32.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <Profile.h>
 
 std::stack<std::string> patchworkStack;
 std::mutex patchworkMutex;
@@ -110,7 +111,6 @@ LRESULT hkWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 static PLH::x64Detour* plhSwapBuffers;
 static uint64_t oSwapBuffers;
 static HGLRC overlayContext;
-
 bool hkSwapBuffers(HDC hdc, int b) {
 	HGLRC originalContext = wglGetCurrentContext();
 	if (!initUi) {
@@ -154,8 +154,22 @@ bool hkSwapBuffers(HDC hdc, int b) {
 	return PLH::FnCast(oSwapBuffers, hkSwapBuffers)(hdc, b);
 }
 
+static PLH::x64Detour* plhIsTowerUnlocked = nullptr;
+static uint64_t oIsTowerUnlocked = Memory::FindSig(Soup::Signatures::SIG_PROFILE_ISTOWERUNLOCKED);
+bool hkIsTowerUnlocked(size_t param_1, int param_2) {
+	return true;
+}
+
+static PLH::x64Detour* plhIsUpgradeUnlocked = nullptr;
+static uint64_t oIsUpgradeUnlocked = Memory::FindSig(Soup::Signatures::SIG_PROFILE_ISUPGRADEUNLOCKED);;
+bool hkIsUpgradeUnlocked(size_t param_1, size_t param_2, int param_3, int param_4) {
+	return true;
+}
+
 bool HookManager::ApplyHooks()
 {
+	Config* config = Config::GetConfig();
+
 	plhDecompressFile = new PLH::x64Detour(oDecompressFile, (uint64_t)hkDecompressFile, &oDecompressFile);
 	if (!plhDecompressFile->hook()) {
 		Logger::Print<Logger::FAILURE>("Failed to hook ZipCpp::DecompressFile");
@@ -186,6 +200,22 @@ bool HookManager::ApplyHooks()
 	else {
 		Logger::Print<Logger::FAILURE>("OpenGL was not found, but the game relies on it? Couldn't hook wglSwapBuffers");
 		return false;
+	}
+
+	if (config->UnlockTowers()) {
+		plhIsTowerUnlocked = new PLH::x64Detour(oIsTowerUnlocked, (uint64_t)hkIsTowerUnlocked, &oIsTowerUnlocked);
+		if (!plhIsTowerUnlocked->hook()) {
+			Logger::Print<Logger::FAILURE>("Failed to hook Profile::IsTowerUnlocked");
+			return false;
+		}
+	}
+
+	if (config->UnlockUpgrades()) {
+		plhIsUpgradeUnlocked = new PLH::x64Detour(oIsUpgradeUnlocked, (uint64_t)hkIsUpgradeUnlocked, &oIsUpgradeUnlocked);
+		if (!plhIsUpgradeUnlocked->hook()) {
+			Logger::Print<Logger::FAILURE>("Failed to hook Profile::IsUpgradeUnlocked");
+			return false;
+		}
 	}
 
     return true;

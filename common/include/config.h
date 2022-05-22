@@ -11,5 +11,8 @@ class Config {
 public:
 	static Config* GetConfig();
 	static void ResetConfig();
+	bool ReadBool(std::string);
 	bool DebugMode();
+	bool UnlockTowers();
+	bool UnlockUpgrades();
 };
