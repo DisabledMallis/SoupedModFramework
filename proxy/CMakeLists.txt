@@ -1,11 +1,11 @@
-add_library(wininet SHARED main.cpp)
+add_library(Winhttp SHARED main.cpp)
 
-target_link_libraries(wininet PRIVATE fmt)
+target_link_libraries(Winhttp PRIVATE fmt)
 
 # Add target to build dir
 add_custom_command(
-	TARGET wininet POST_BUILD
+	TARGET Winhttp POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy
-		${CMAKE_BINARY_DIR}/proxy/wininet.dll
-		${FINAL_DIR}/proxies/wininet.dll
+		${CMAKE_BINARY_DIR}/proxy/Winhttp.dll
+		${FINAL_DIR}/proxies/Winhttp.dll
 )

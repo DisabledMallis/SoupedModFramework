@@ -26,31 +26,34 @@ static bool initUi = false;
 
 static PLH::x64Detour* plhDecompressFile;
 static uint64_t oDecompressFile = Memory::FindSig(Soup::Signatures::SIG_ZIPCPP_DECOMPRESSFILE);
-void* hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint32_t bufferSize) {
+void* hkDecompressFile(Soup::ZipReader* pZipReader) {
+	Soup::ZipIterator* pZipIterator = pZipReader->pZipIterator;
+	char* pReadBuffer = (char*)pZipReader->pReadBuffer;
+	uint32_t bufferSize = pZipReader->bufferSize;
 	//Get the bundle (.jet) file path
 	std::filesystem::path bundlePath = pZipIterator->psArchivePath->cpp_str();
 	//Get the bundle information
 	Soup::ZipEntry* bundleData = pZipIterator->pZipEntry;
 	//Get the entry & path for the current file
 	std::string fileName = bundleData->GetName().cpp_str();
-	void* ret = PLH::FnCast(oDecompressFile, hkDecompressFile)(pZipIterator, lpReadBuffer, bufferSize);
+	void* ret = PLH::FnCast(oDecompressFile, hkDecompressFile)(pZipReader);
 	Logger::Debug("Decompressed {}", fileName);
 
 	static char bin2_header[] = "%BIN_2.0";
 	static char jpng_header[] = "%JPNG001";
-	if (memcmp(bin2_header, lpReadBuffer, sizeof(bin2_header) - 1) == 0)
+	if (memcmp(bin2_header, pReadBuffer, sizeof(bin2_header) - 1) == 0)
 	{
 		Logger::Debug("{} IS BIN2 encrypted", fileName);
-		Dumper::DumpToDisk(fileName, bundlePath, std::string(lpReadBuffer, bufferSize));
+		Dumper::DumpToDisk(fileName, bundlePath, std::string(pReadBuffer, bufferSize));
 		patchworkMutex.lock();
 		patchworkStack.push(fileName);
 		patchworkMutex.unlock();
 		return ret;
 	}
-	if (memcmp(jpng_header, lpReadBuffer, sizeof(jpng_header) - 1) == 0)
+	if (memcmp(jpng_header, pReadBuffer, sizeof(jpng_header) - 1) == 0)
 	{
 		Logger::Debug("{} IS JPNG format", fileName);
-		Dumper::DumpToDisk(fileName, bundlePath, std::string(lpReadBuffer, bufferSize));
+		Dumper::DumpToDisk(fileName, bundlePath, std::string(pReadBuffer, bufferSize));
 		return ret;
 	}
 	Logger::Debug("{} is not BIN2 nor JPNG format", fileName);

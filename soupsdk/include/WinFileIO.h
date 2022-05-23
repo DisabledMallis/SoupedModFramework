@@ -46,4 +46,10 @@ namespace Soup {
 		Soup::String* psArchivePath; //0x0038
 		ZipEntry* pZipEntry; //0x0040
 	};
+	class ZipReader {
+	public:
+		ZipIterator* pZipIterator;
+		uint8_t* pReadBuffer;
+		uint32_t bufferSize;
+	};
 };
