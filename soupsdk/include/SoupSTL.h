@@ -95,4 +95,80 @@ namespace Soup {
 			return basic_string_view(this->viewBegin, this->viewEnd);
 		}
 	};
+
+	//TODO: finish kthx
+	template <typename T>
+	class ArrayList {
+		T* firstAddr;
+		T* lastAddr;
+		void* nextRealign;
+	public:
+		size_t count() {
+			return (((size_t)lastAddr) - ((size_t)firstAddr)) / sizeof(T);
+		}
+		T* begin() {
+			return firstAddr;
+		}
+		T* end() {
+			return lastAddr;
+		}
+		void clear() {
+			lastAddr = firstAddr;
+		}
+		T* operator[](long long pos) {
+			return this->at(pos);
+		}
+		T* at(long long pos) {
+			long long ptrOffset = pos * sizeof(T);
+			T* item = (T*)(((long long)firstAddr) + ptrOffset);
+			return item;
+		}
+		void realign() {
+			//Double the element count, and multiply that by the size of a pointer
+			//Leaves double the room before needing to realloc
+			long long b_size = count() * sizeof(T);
+			long long newAllocSize = (count() * sizeof(T)) * 2;
+			T* newFirst = (T*)malloc(newAllocSize);
+			memset(newFirst, 0, newAllocSize);
+
+			//Copy old objects
+			T* contentBegin = newFirst + 16;
+			long long contentSize = newAllocSize - 16;
+			memcpy_s(contentBegin, contentSize, firstAddr, b_size);
+
+			*(size_t*)(contentBegin - sizeof(T*)) = (size_t)newFirst;
+
+			//set new vals
+			firstAddr = contentBegin;
+			lastAddr = contentBegin + b_size;
+			nextRealign = newFirst + newAllocSize;
+		}
+		void push_back(T val) {
+			if (lastAddr + sizeof(T) >= nextRealign) {
+				realign();
+			}
+			*lastAddr = val;
+			lastAddr += sizeof(T);
+		}
+		bool remove(long long index) {
+			long long count = this->count();
+			if (index >= count) {
+				//Index is outside of the size like bruh
+				return false;
+			}
+
+			//Get a pointer to the instance at the desired index
+			T* tAtOff = this->at(index);
+			//Get a pointer to the next instance after the one at the index
+			T* tNextOff = this->at(index + 1);
+			//Copy the memory to align the next offset at the current offset
+			memcpy_s(tAtOff, lastAddr - tAtOff, tNextOff, lastAddr - tNextOff);
+			//Throw away/free the last instance (its now at the index before, so our lastAddr pops up sizeof(T)
+			this->lastAddr = this->at(this->count() - 1);
+
+			//We're done
+			return true;
+		}
+	};
+	static_assert(sizeof(ArrayList<void*>) == 24, "nuv::vector is misaligned!");
 };

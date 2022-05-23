@@ -59,7 +59,8 @@ void* hkDecompressFile(Soup::ZipIterator* pZipIterator, char* lpReadBuffer, uint
 
 static PLH::x64Detour* plhDecryptBytes;
 static uint64_t oDecryptBytes = Memory::FindSig(Soup::Signatures::SIG_BIN2_DECRYPTBYTES);
-void* hkDecryptBytes(uint8_t** bytes) {
+static auto fnResizeBuffer = (void(__fastcall*)(void**, long long))Memory::FindSig(Soup::Signatures::SIG_BIN2_RESIZEBUFFER);
+void* hkDecryptBytes(Soup::ArrayList<uint8_t>* bytes) {
 	void* result = PLH::FnCast(oDecryptBytes, hkDecryptBytes)(bytes);
 
 	patchworkMutex.lock();
@@ -77,18 +78,28 @@ void* hkDecryptBytes(uint8_t** bytes) {
 	Logger::Debug("Patching {}", targetFile);
 
 	/*Patch the file*/
-	std::string fileContent = std::string(*(char**)bytes, (size_t)(bytes[1] - bytes[0]));
+	std::string fileContent = std::string((char*)bytes->at(0), bytes->count());
 	Patchers::PatchData(targetFile, fileContent);
 
 	//Safety checks
-	size_t bufferSize = bytes[1] - bytes[0];
+	size_t bufferSize = bytes->count();
 	if (bufferSize < fileContent.size()) {
 		Logger::Debug("WARNING: There is not enough space allocated to apply this patch!");
+		fnResizeBuffer((void**)bytes, fileContent.size());
 	}
 
 	//Place the patched data back into the buffer
-	memset(bytes[0], 0, bufferSize);
-	memcpy_s(bytes[0], bufferSize, fileContent.c_str(), fileContent.size());
+	memset(bytes->begin(), 0, bytes->count());
+	memcpy_s(bytes->begin(), bytes->count(), fileContent.c_str(), fileContent.size());
+	/*
+	Logger::Debug("Clearing file content buffer");
+	bytes->clear();
+	Logger::Debug("Buffer cleared");
+	for (int i = 0; i < fileContent.size(); i++) {
+		bytes->push_back(fileContent.data()[i]);
+	}
+	Logger::Debug("Patch written");
+	*/
 
 	//Print we finished patching
 	Logger::Debug("Patched {}", targetFile);
