@@ -10,6 +10,7 @@
 #include <config.h>
 #include <ModFS.h>
 #include "ui/ui.h"
+#include "modRegistry.h"
 
 static PLH::x64Detour* plhwWinMain;
 static uint64_t owWinMain;
@@ -73,11 +74,15 @@ int __stdcall hkwWinMain(
 		JSUtils::JsValue& global = JSUtils::GetGlobalObject();
 		JSUtils::JsValue souped = JSUtils::JsValue("souped", true);
 
+		JSUtils::JsValue modfs = JSUtils::JsValue("mfs", true);
+		JSUtils::JsValue readFile = JSUtils::JsValue((JsNativeFunction)ModRegistry::JS::readFile);
+		modfs.SetProperty("readFile", readFile);
+		souped.SetProperty("mfs", modfs);
+
 		JSUtils::JsValue registerPatcher = JSUtils::JsValue((JsNativeFunction)Patchers::registerPatcher);
 		JSUtils::JsValue notify = JSUtils::JsValue((JsNativeFunction)UI::JsNotify);
 		souped.SetProperty("registerPatcher", registerPatcher);
 		souped.SetProperty("notify", notify);
-
 		global.SetProperty("souped", souped);
 
 		Logger::Print("souped API ready");
@@ -89,15 +94,10 @@ int __stdcall hkwWinMain(
 	JSUtils::SetupRuntime();
 
 	//Load all mods
-	std::vector<ModFS::Mod> allMods = ModFS::LoadAllMods(cd);
-
-	for (auto& mod : allMods) {
-		Logger::Print("Loading {} version {}", mod.meta.name, mod.meta.version);
-		for (auto& script : mod.meta.scripts) {
-			Logger::Debug("Loading script: {}", script);
-			std::string scriptCode = mod.ReadEntry(script);
-			JSUtils::RunCode(mod.meta.name + "/" + script, scriptCode);
-		}
+	ModRegistry::LoadAllMods(cd);
+	std::vector<ModRegistry::Mod*> allMods = ModRegistry::GetMods();
+	for (auto mod : allMods) {
+		mod->Run();
 	}
 
 	return PLH::FnCast(owWinMain, hkwWinMain)(

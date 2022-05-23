@@ -12,14 +12,14 @@
 console.log("Welcome to souped.js!");
 
 //Patcher helper functions
-souped.registerJsonPatcher = function (callback, filename) {
-    souped.registerPatcher((name, data) => {
-        var dataObj = JSON.parse(data);
-        var { successful, data } = callback(dataObj);
+souped.registerJsonPatcher = function (bundleName, fileName, callback) {
+    souped.registerPatcher(bundleName, fileName, (bundleName, fileName, fileContent) => {
+        var dataObj = JSON.parse(fileContent);
+        var { successful, data } = callback(bundleName, fileName, dataObj);
         if (successful) {
             var patchedStr = JSON.stringify(data);
             return { successful: successful, data: patchedStr };
         }
-        return { successful: false, data: data };
-    }, filename);
+        return { successful: false, data: fileContent };
+    });
 }

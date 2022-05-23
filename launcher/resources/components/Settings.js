@@ -16,6 +16,7 @@ export default {
 			<BoolSetting settingName="Debug Mode" settingId="debug"/>
 			<BoolSetting settingName="Unlock all towers (and heroes)" settingId="unlockTowers"/>
 			<BoolSetting settingName="Unlock all upgrades" settingId="unlockUpgrades"/>
+			<BoolSetting settingName="Dump Assets" settingId="dump"/>
 		</div>
 	`
 }

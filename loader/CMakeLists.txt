@@ -4,10 +4,13 @@ target_sources(Loader PRIVATE
 	"scripts/souped.js"
 	"hookManager.cpp"
 	"main.cpp"
- "ui/ui.h" "ui/ui.cpp")
+	"modRegistry.cpp"
+)
 
 add_subdirectory(dumper)
+add_subdirectory(jpng)
 add_subdirectory(patcher)
+add_subdirectory(ui)
 
 set(SDK_ROOT "${CMAKE_BINARY_DIR}/SDK/")
 set(ULTRALIGHT_INCLUDE_DIR "${SDK_ROOT}/include")

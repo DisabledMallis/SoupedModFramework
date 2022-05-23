@@ -2,7 +2,7 @@
 #include <nlohmann/json.hpp>
 #include <logger.h>
 
-BattleMenuPatcher::BattleMenuPatcher() : Patchers::Patcher("battle_screen.scene") {};
+BattleMenuPatcher::BattleMenuPatcher() : Patchers::Patcher("ui_lrg_med_sml", "battle_screen.scene") {};
 
 nlohmann::ordered_json null(nullptr);
 nlohmann::ordered_json& findChild(nlohmann::ordered_json& parent, std::string key, nlohmann::ordered_json value) {
@@ -24,7 +24,7 @@ nlohmann::ordered_json& findChild(nlohmann::ordered_json& parent, std::string ke
 	return null;
 }
 
-bool BattleMenuPatcher::DoPatchwork(std::string fileName, std::string& fileData)
+bool BattleMenuPatcher::DoPatchwork(std::string bundleName, std::string fileName, std::string& fileData)
 {
 	using namespace nlohmann;
 	try {
