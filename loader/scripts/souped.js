@@ -13,7 +13,14 @@ console.log("Welcome to souped.js!");
 
 const csvRegex = new RegExp(`\\s*(")?(.*?)\\1\\s*(?:,|$)`, "gs");
 const match = line => {
-    const matches = [...line.matchAll(csvRegex)].map(m => m[2]);
+    var matches = new Array();
+    const matchResult = line.match(csvRegex);
+    for (let index in matchResult) {
+        const item = matchResult[index];
+        matches[index] = item.match(csvRegex); 
+    }
+    
+    matches = matches.map(m => m[0].endsWith(',') ? m[0].slice(0, -1) : m[0]);
     matches.pop();
     return matches;
 }
