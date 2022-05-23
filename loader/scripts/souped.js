@@ -26,17 +26,37 @@ const match = line => {
 }
 
 //Patcher helper functions
-souped.registerCsvPatcher = function (callback, filename) {
+souped.registerAssetCsvPatcher = function (callback, filename) {
     souped.registerPatcher((name, data) => {
-        const lines = data.split("\n");
+        const lines = data.split('\n');
+
+        const dataObj = lines.map(line => {
+            const kvp = line.split(',');
+            return { [kvp[1]]: kvp[0] };
+        });
+        dataObj.pop();
+        
+        var { successful, data } = callback(dataObj);
+        if (successful) {
+            const patchedStr = data.map(kvp => {
+                return `${Object.values(kvp)[0]},${Object.keys(kvp)[0]}`;
+            }).join('\n');
+            return { successful: successful, data: patchedStr };
+        }
+        
+        return { successful: false, data: data };
+    }, filename);
+}
+
+souped.registerDataCsvPatcher = function (callback, filename) {
+    souped.registerPatcher((name, data) => {
+        const lines = data.split('\n');
         const headers = match(lines.shift());
 
         const dataObj = lines.map(line => {
             return match(line).reduce((acc, cur, i) => {
                 if (headers[i] !== null) {
-                    const val = cur.length <= 0 ? null : Number(cur) || cur;
-                    const key = headers[i];
-                    return { ...acc, [key]: val };
+                    return { ...acc, [headers[i]]: cur };
                 }
             }, {});
         });
