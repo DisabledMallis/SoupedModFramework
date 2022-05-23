@@ -21,7 +21,7 @@ int __stdcall hkwWinMain(
 ) {
 	//Move proxy dll back into 'proxies' folder
 	std::filesystem::path cd = std::filesystem::current_path();
-	std::filesystem::rename("./wininet.dll", "./proxies/wininet.dll");
+	std::filesystem::rename("./Winhttp.dll", "./proxies/Winhttp.dll");
 
 	//Load config
 	Config::GetConfig();
@@ -107,18 +107,42 @@ int __stdcall hkwWinMain(
 		nShowCmd);
 }
 
+static PLH::x64Detour* plhFreeConsole = nullptr;
+static uint64_t oFreeConsole = (uint64_t)FreeConsole;
+bool hkFreeConsole() {
+	Logger::Debug("The game tried to free the console window");
+	return false;
+}
+
 int initialize() {
 	SetConsoleTitleA("Console");
 	
 	Logger::Print("Welcome to SoupedModFramework");
-	Logger::Print("Hooking WinMain...");
+
+	//Get winmain func
+	
+	//Patch out FreeConsole
+	uint64_t pCreateWindow = Memory::FindSig("?? 89 ?? ?? ?? ?? 89 ?? ?? ?? ?? 89 ?? ?? ?? 55 41 ?? 41 ?? 41 ?? 41 ?? 48 ?? ?? ?? ?? ?? ?? ?? 48 81 ?? ?? ?? ?? ?? 48 8B ?? ?? ?? ?? ?? 48 33 ?? ?? 89 ?? ?? ?? ?? ?? 4C 8B ?? 4C 63");
+	Logger::Debug("Patching WinMain...");
+	uint8_t* pFreeConCall = (uint8_t*)(pCreateWindow + 0x5C);
+	uint64_t callSize = 6;
+	DWORD oldProt;
+	VirtualProtect((LPVOID)pFreeConCall, callSize, PAGE_EXECUTE_READWRITE, &oldProt);
+	for (int i = 0; i < callSize; i++) {
+		pFreeConCall[i] = 0x90;
+	}
+	Logger::Debug("WinMain Patched @ {}", (void*)pFreeConCall);
+
+	Logger::Debug("Hooking WinMain...");
 	uint64_t pwWinMain = Memory::FindSig("?? 89 ?? ?? ?? 55 56 57 41 ?? 41 ?? 41 ?? 41 ?? 48 ?? ?? ?? ?? ?? ?? ?? 48 81 ?? ?? ?? ?? ?? 48 8B ?? ?? ?? ?? ?? 48 33 ?? ?? 89 ?? ?? ?? ?? ?? 4D 8B ?? ?? 89 ?? ?? 4D");
 	plhwWinMain = new PLH::x64Detour((uint64_t)pwWinMain, (uint64_t)hkwWinMain, &owWinMain);
 	if (!plhwWinMain->hook()) {
 		Logger::Print<Logger::FAILURE>("Failed to hook main");
 		return false;
 	}
-	Logger::Print("WinMain hooked");
+	Logger::Debug("WinMain hooked");
+
+	
 	return 0;
 }
 

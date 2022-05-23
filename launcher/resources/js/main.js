@@ -31,7 +31,7 @@ Neutralino.events.on("windowClose", onWindowClose);
 
 window.nativeLaunch = async function() {
 	try {
-		await fs.moveFile("./proxies/wininet.dll", "./wininet.dll");
+		await fs.moveFile("./proxies/Winhttp.dll", "./Winhttp.dll");
 		await os.execCommand("btdb2_game.exe");
 	} catch(ex) {
 		os.showMessageBox("Launch Error", ex.message, 'OK', 'ERROR');
