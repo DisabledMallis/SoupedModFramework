@@ -38,9 +38,7 @@ souped.registerAssetCsvPatcher = function (callback, filename) {
         
         var { successful, data } = callback(dataObj);
         if (successful) {
-            const patchedStr = data.map(kvp => {
-                return `${Object.values(kvp)[0]},${Object.keys(kvp)[0]}`;
-            }).join('\n');
+            const patchedStr = data.map(kvp => `${Object.values(kvp)[0]},${Object.keys(kvp)[0]}`).join('\n');
             return { successful: successful, data: patchedStr };
         }
         
