@@ -6,7 +6,8 @@
 #include <ZipCpp.h>
 #include <Bin2.h>
 #include "dumper/dumper.h"
-#include <patchers.h>
+#include "patcher/patchers.h"
+#include "patcher/overrides.h"
 
 #include <Windows.h>
 #include <stack>
@@ -20,8 +21,8 @@
 #include "ui/ui.h"
 #include <ShlObj_core.h>
 
-std::stack<std::array<std::string, 2>> patchworkStack;
 std::mutex patchworkMutex;
+std::stack<std::array<std::string, 2>> patchworkStack;
 static bool initUi = false;
 
 static PLH::x64Detour* plhDecompressFile;
@@ -84,7 +85,9 @@ void* hkDecryptBytes(Soup::ArrayList<uint8_t>* bytes) {
 
 	/*Patch the file*/
 	std::string fileContent = std::string((char*)bytes->at(0), bytes->count());
+	Overrides::RunOverrides(targetBundle, targetFile, fileContent, false);
 	Patchers::PatchData(targetBundle, targetFile, fileContent);
+	Overrides::RunOverrides(targetBundle, targetFile, fileContent, true);
 
 	//Safety checks
 	size_t bufferSize = bytes->count();
