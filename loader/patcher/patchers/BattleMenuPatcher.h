@@ -5,5 +5,5 @@
 struct BattleMenuPatcher : public Patchers::Patcher {
 	BattleMenuPatcher();
 
-	bool DoPatchwork(std::string, std::string&) override;
+	bool DoPatchwork(std::string, std::string, std::string&) override;
 };

@@ -27,6 +27,12 @@ ModFS::Mod::Mod(std::filesystem::path pathOnDisk) {
 	else {
 		Logger::Print<Logger::FAILURE>("Mod {} is missing the field '{}' in the meta.json", pathOnDisk.filename().string(), "name");
 	}
+	if (metaJson.contains("modid")) {
+		this->meta.name = metaJson["modid"];
+	}
+	else {
+		Logger::Print<Logger::FAILURE>("Mod {} is missing the field '{}' in the meta.json", pathOnDisk.filename().string(), "modid");
+	}
 	if (metaJson.contains("scripts")) {
 		this->meta.scripts = metaJson["scripts"];
 	}

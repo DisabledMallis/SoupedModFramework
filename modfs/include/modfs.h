@@ -8,17 +8,19 @@
 struct archive {};
 namespace ModFS {
 	struct ModMeta {
-		std::string name;
-		std::string description;
-		std::string version;
 		std::vector<std::string> authors;
+		std::string description;
+		std::string modid;
+		std::string name;
 		std::vector<std::string> scripts;
+		std::string version;
 	};
 	struct Mod {
-		bool isArchive;
-		ZipUtils::ArchiveWrapper* innerArchive;
-		std::filesystem::path innerPath;
+		bool isArchive = false;
+		ZipUtils::ArchiveWrapper* innerArchive = nullptr;
+		std::filesystem::path innerPath = "";
 		ModMeta meta;
+		Mod() {};
 		Mod(std::filesystem::path);
 		std::string ReadEntry(std::string);
 	};

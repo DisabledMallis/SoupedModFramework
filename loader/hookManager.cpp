@@ -20,7 +20,7 @@
 #include "ui/ui.h"
 #include <ShlObj_core.h>
 
-std::stack<std::string> patchworkStack;
+std::stack<std::array<std::string, 2>> patchworkStack;
 std::mutex patchworkMutex;
 static bool initUi = false;
 
@@ -46,7 +46,7 @@ void* hkDecompressFile(Soup::ZipReader* pZipReader) {
 		Logger::Debug("{} IS BIN2 encrypted", fileName);
 		Dumper::DumpToDisk(fileName, bundlePath, std::string(pReadBuffer, bufferSize));
 		patchworkMutex.lock();
-		patchworkStack.push(fileName);
+		patchworkStack.push(std::array<std::string, 2>{bundlePath.filename().string(), fileName});
 		patchworkMutex.unlock();
 		return ret;
 	}
@@ -73,7 +73,9 @@ void* hkDecryptBytes(Soup::ArrayList<uint8_t>* bytes) {
 		return result;
 	}
 	//Get the first file in the stack
-	std::string targetFile = patchworkStack.top();
+	std::array<std::string, 2> targetInfo = patchworkStack.top();
+	std::string targetBundle = targetInfo[0];
+	std::string targetFile = targetInfo[1];
 	//Pop it off the stack when the name is stored
 	patchworkStack.pop();
 
@@ -82,7 +84,7 @@ void* hkDecryptBytes(Soup::ArrayList<uint8_t>* bytes) {
 
 	/*Patch the file*/
 	std::string fileContent = std::string((char*)bytes->at(0), bytes->count());
-	Patchers::PatchData(targetFile, fileContent);
+	Patchers::PatchData(targetBundle, targetFile, fileContent);
 
 	//Safety checks
 	size_t bufferSize = bytes->count();
@@ -94,15 +96,6 @@ void* hkDecryptBytes(Soup::ArrayList<uint8_t>* bytes) {
 	//Place the patched data back into the buffer
 	memset(bytes->begin(), 0, bytes->count());
 	memcpy_s(bytes->begin(), bytes->count(), fileContent.c_str(), fileContent.size());
-	/*
-	Logger::Debug("Clearing file content buffer");
-	bytes->clear();
-	Logger::Debug("Buffer cleared");
-	for (int i = 0; i < fileContent.size(); i++) {
-		bytes->push_back(fileContent.data()[i]);
-	}
-	Logger::Debug("Patch written");
-	*/
 
 	//Print we finished patching
 	Logger::Debug("Patched {}", targetFile);

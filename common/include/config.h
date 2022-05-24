@@ -13,6 +13,7 @@ public:
 	static void ResetConfig();
 	bool ReadBool(std::string);
 	bool DebugMode();
+	bool DumpAssets();
 	bool UnlockTowers();
 	bool UnlockUpgrades();
 };

@@ -7,6 +7,10 @@
 
 void Dumper::DumpToDisk(std::string fileName, std::filesystem::path bundlePath, std::string content)
 {
+	Config* config = Config::GetConfig();
+	if(!config->DumpAssets()) {
+		return;
+	}
 	uint8_t* decryptBuffer = (uint8_t*)_malloca(content.size());
 	if (!decryptBuffer) {
 		Logger::Print<Logger::WARNING>("Failed to dump file! Couldn't allocate decryptBuffer");

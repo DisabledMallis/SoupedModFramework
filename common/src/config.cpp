@@ -50,6 +50,10 @@ bool Config::DebugMode() {
 	return this->ReadBool("debug");
 }
 
+bool Config::DumpAssets() {
+	return this->ReadBool("dump");
+}
+
 bool Config::UnlockTowers() {
 	return this->ReadBool("unlockTowers");
 }
