@@ -26,9 +26,9 @@ const match = line => {
 }
 
 //Patcher helper functions
-souped.registerAssetCsvPatcher = function (callback, filename) {
-    souped.registerPatcher((name, data) => {
-        const lines = data.split('\n');
+souped.registerAssetCsvPatcher = function (bundleName, fileName, callback) {
+    souped.registerPatcher(bundleName, fileName, (bundleName, fileName, fileContent) => {
+        const lines = fileContent.split('\n');
 
         const dataObj = lines.map(line => {
             const kvp = line.split(',');
@@ -42,13 +42,13 @@ souped.registerAssetCsvPatcher = function (callback, filename) {
             return { successful: successful, data: patchedStr };
         }
         
-        return { successful: false, data: data };
-    }, filename);
+        return { successful: false, data: fileContent };
+    });
 }
 
-souped.registerDataCsvPatcher = function (callback, filename) {
-    souped.registerPatcher((name, data) => {
-        const lines = data.split('\n');
+souped.registerDataCsvPatcher = function (bundleName, fileName, callback) {
+    souped.registerPatcher(bundleName, fileName, (bundleName, fileName, fileContent) => {
+        const lines = fileContent.split('\n');
         const headers = match(lines.shift());
 
         const dataObj = lines.map(line => {
@@ -66,18 +66,18 @@ souped.registerDataCsvPatcher = function (callback, filename) {
             return { successful: successful, data: patchedStr };
         }
 
-        return { successful: false, data: data };
-    }, filename);
+        return { successful: false, data: fileContent };
+    });
 }
 
-souped.registerJsonPatcher = function (callback, filename) {
-    souped.registerPatcher((name, data) => {
-        var dataObj = JSON.parse(data);
-        var { successful, data } = callback(dataObj);
+souped.registerJsonPatcher = function (bundleName, fileName, callback) {
+    souped.registerPatcher(bundleName, fileName, (bundleName, fileName, fileContent) => {
+        var dataObj = JSON.parse(fileContent);
+        var { successful, data } = callback(bundleName, fileName, dataObj);
         if (successful) {
             var patchedStr = JSON.stringify(data);
             return { successful: successful, data: patchedStr };
         }
-        return { successful: false, data: data };
-    }, filename);
+        return { successful: false, data: fileContent };
+    });
 }
