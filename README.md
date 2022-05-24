@@ -13,7 +13,7 @@ For mod creation, check out the [development guide](https://souped.dev/develop/)
 Looking for mods, or just to talk with other members in the SMF community?
 Join the SMF [Discord Server](https://discord.gg/nPcBPyHP4c)!
 
-https://bloonsmods.com
+http://bloonsmods.com
 
 # Structure
 ## Common
