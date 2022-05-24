@@ -54,7 +54,8 @@ souped.registerDataCsvPatcher = function (bundleName, fileName, callback) {
         const dataObj = lines.map(line => {
             return match(line).reduce((acc, cur, i) => {
                 if (headers[i] !== null) {
-                    return { ...acc, [headers[i]]: cur };
+		    const val = cur.length <= 0 ? null : Number(cur) || cur;
+                    return { ...acc, [headers[i]]: val };
                 }
             }, {});
         });
