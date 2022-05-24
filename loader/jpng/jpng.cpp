@@ -48,14 +48,18 @@ Gdiplus::Bitmap* GdiplusImageToBitmap(Gdiplus::Image* img, Gdiplus::Color bkgd =
 		int wd = img->GetWidth();
 		int hgt = img->GetHeight();
 		auto format = img->GetPixelFormat();
-		Gdiplus::Bitmap* bmp = new Gdiplus::Bitmap(wd, hgt, format);
+		bmp = new Gdiplus::Bitmap(wd, hgt, format);
 		auto g = std::unique_ptr<Gdiplus::Graphics>(Gdiplus::Graphics::FromImage(bmp));
 		g->Clear(bkgd);
 		g->DrawImage(img, 0, 0, wd, hgt);
 	}
-	catch (...) {
-		// this might happen if img->GetPixelFormat() is something exotic
-		// ... not sure
+	catch (std::exception& ex) {
+		Logger::Debug("Error converting image to bitmap: {}", std::string(ex.what()));
+	}
+	if (bmp) {
+		if (bmp->GetLastStatus() != Gdiplus::Status::Ok) {
+			Logger::Debug("Image::GetLastStatus was NOT ok: {}", std::to_string(bmp->GetLastStatus()));
+		}
 	}
 	return bmp;
 }
@@ -93,6 +97,10 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 }
 
 std::vector<uint8_t> JPNG::ToPNG() {
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
+	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+
 	IStream* jfifStream = SHCreateMemStream(this->jpegData.data(), this->jpegData.size());
 	IStream* pngStream = SHCreateMemStream(this->pngData.data(), this->pngData.size());
 	Gdiplus::Image* jfifFromStream = Gdiplus::Image::FromStream(jfifStream);
@@ -106,7 +114,15 @@ std::vector<uint8_t> JPNG::ToPNG() {
 		return std::vector<uint8_t>();
 	}
 	Gdiplus::Bitmap* jfifImg = GdiplusImageToBitmap(jfifFromStream);
+	if (!jfifImg) {
+		Logger::Print<Logger::FAILURE>("Failed to convert jfif to bitmap");
+		return std::vector<uint8_t>();
+	}
 	Gdiplus::Bitmap* pngImg = GdiplusImageToBitmap(pngFromStream);
+	if (!pngImg) {
+		Logger::Print<Logger::FAILURE>("Failed to convert png to bitmap");
+		return std::vector<uint8_t>();
+	}
 
 	uint64_t pngWidth = pngImg->GetWidth();
 	uint64_t pngHeight = pngImg->GetHeight();
@@ -119,7 +135,7 @@ std::vector<uint8_t> JPNG::ToPNG() {
 		return std::vector<uint8_t>();
 	}
 
-	Gdiplus::Bitmap* resultImg = new Gdiplus::Bitmap(pngWidth, pngHeight);
+	Gdiplus::Bitmap* resultImg = new Gdiplus::Bitmap(pngWidth, pngHeight, PixelFormat32bppARGB);
 	for (uint64_t x = 0; x < pngWidth; x++) {
 		for (uint64_t y = 0; y < pngHeight; y++) {
 			Gdiplus::Color cOpacity;
@@ -133,7 +149,8 @@ std::vector<uint8_t> JPNG::ToPNG() {
 
 			Gdiplus::Color color;
 			jfifImg->GetPixel(x, y, &color);
-			color.MakeARGB(opacity, color.GetR(), color.GetG(), color.GetB());
+			Gdiplus::ARGB col_argb = Gdiplus::Color::MakeARGB(opacity, color.GetR(), color.GetG(), color.GetB());
+			color.SetValue(col_argb);
 			resultImg->SetPixel(x, y, color);
 		}
 	}
@@ -162,5 +179,6 @@ std::vector<uint8_t> JPNG::ToPNG() {
 	IStream_Read(resultStream, resultBuffer.data(), len);
 	resultStream->Release();
 
+	Gdiplus::GdiplusShutdown(gdiplusToken);
 	return resultBuffer;
 };
