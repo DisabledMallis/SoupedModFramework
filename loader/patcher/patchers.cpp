@@ -4,7 +4,7 @@
 std::vector<Patchers::Patcher*> patcherList;
 
 jsfunction(Patchers::registerPatcher) {
-	JSUtils::JsValue patcherId = 0;
+	JSUtils::JsValue patcherId = -1;
 	if (jsargc == 4) {
 		JSUtils::JsValue targetBundle = jsargv[1];
 		JSUtils::JsValue targetFile = jsargv[2];
@@ -20,6 +20,7 @@ jsfunction(Patchers::registerPatcher) {
 		
 		int id = Patchers::RegisterPatcher(jsPatcher);
 		patcherId = id;
+		Logger::Debug("Registered patcher with id {}", id);
 		return patcherId;
 	}
 	else {

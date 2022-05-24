@@ -45,9 +45,30 @@ void Overrides::JsOverride::GetContent(std::string bundleName, std::string fileN
 	}
 }
 
+size_t Overrides::RegisterOverride(Override* ovride) {
+	fileOverrides.push_back(ovride);
+	return fileOverrides.size() - 1;
+}
 void Overrides::RunOverrides(std::string targetBundle, std::string targetFile, std::string& content, bool isPost)
 {
 	for (auto* fileOverride : fileOverrides) {
 		fileOverride->GetContent(targetBundle, targetFile, content, isPost);
 	}
+}
+
+jsfunction(Overrides::registerOverride) {
+	using namespace JSUtils;
+	if (jsargc == 5) {
+		JsValue bundleName = jsargv[1];
+		JsValue fileName = jsargv[2];
+		JsValue modifyable = jsargv[3];
+		JsValue callback = jsargv[4];
+
+		ModRegistry::Mod* currentMod = ModRegistry::GetImmediateMod();
+		JsOverride jsOverride = new JsOverride(bundleName, fileName, modifyable, currentMod, callback);
+		size_t id = RegisterOverride(jsOverride);
+		Logger::Debug("Registered override with id {}", id);
+		return id;
+	}
+	return -1;
 }

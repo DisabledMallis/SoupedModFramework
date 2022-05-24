@@ -6,6 +6,7 @@
 #include <ipc.h>
 #include <SoupSTL.h>
 #include "patcher/patchers/BattleMenuPatcher.h"
+#include "patcher/overrides.h"
 #include <stdjs.h>
 #include <config.h>
 #include <ModFS.h>
@@ -80,8 +81,10 @@ int __stdcall hkwWinMain(
 		souped.SetProperty("mfs", modfs);
 
 		JSUtils::JsValue registerPatcher = JSUtils::JsValue((JsNativeFunction)Patchers::registerPatcher);
+		JSUtils::JsValue registerOverride = JSUtils::JsValue((JsNativeFunction)Overrides::registerOverride);
 		JSUtils::JsValue notify = JSUtils::JsValue((JsNativeFunction)UI::JsNotify);
 		souped.SetProperty("registerPatcher", registerPatcher);
+		souped.SetProperty("registerOverride", registerOverride);
 		souped.SetProperty("notify", notify);
 		global.SetProperty("souped", souped);
 

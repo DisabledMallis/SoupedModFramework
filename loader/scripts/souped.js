@@ -36,7 +36,7 @@ souped.registerAssetCsvPatcher = function (bundleName, fileName, callback) {
         });
         dataObj.pop();
         
-        var { successful, data } = callback(dataObj);
+        var { successful, data } = callback(bundleName, fileName, dataObj);
         if (successful) {
             const patchedStr = data.map(kvp => `${Object.values(kvp)[0]},${Object.keys(kvp)[0]}`).join('\n');
             return { successful: successful, data: patchedStr };
@@ -59,7 +59,7 @@ souped.registerDataCsvPatcher = function (bundleName, fileName, callback) {
             }, {});
         });
 
-        var { successful, data } = callback(dataObj);
+        var { successful, data } = callback(bundleName, fileName, dataObj);
         if (successful) {
             const keys = [...new Set(data.map(e => Object.keys(e)).flat())];
             const patchedStr = `${keys.join(',')}\n` + data.map(e => Object.values(e).join(',')).join('\n');
@@ -80,4 +80,16 @@ souped.registerJsonPatcher = function (bundleName, fileName, callback) {
         }
         return { successful: false, data: fileContent };
     });
+}
+
+souped.registerFileOverride = function (bundleName, fileName, modifyable, pathInMod, callback) {
+    souped.registerOverride(bundleName, fileName, modifyable, (bundleName, fileName, fileContent, isPost) => {
+		try {
+			var overrideContent = souped.mfs.readFile(pathInMod);
+			return { successful: true, data: overrideContent };
+		} catch(ex) {
+			console.warn(ex.message);
+		}
+		return { successful: false, data: fileContent };
+	});
 }

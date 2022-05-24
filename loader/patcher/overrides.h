@@ -26,6 +26,7 @@ namespace Overrides {
 		void GetContent(std::string targetBundle, std::string targetFile, std::string& content, bool isPost) override;
 	};
 
+	size_t RegisterOverride(Override*);
 	void RunOverrides(std::string targetBundle, std::string targetFile, std::string& content, bool isPost);
 
 	jsfunction(registerOverride);
