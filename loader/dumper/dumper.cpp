@@ -4,6 +4,7 @@
 
 #include <logger.h>
 #include <Bin2.h>
+#include "../jpng/jpng.h"
 
 void Dumper::DumpToDisk(std::string fileName, std::filesystem::path bundlePath, std::string content)
 {
@@ -40,25 +41,14 @@ void Dumper::DumpToDisk(std::string fileName, std::filesystem::path bundlePath, 
 	}
 	if (memcmp(jpng_header, decryptBuffer, sizeof(jpng_header) - 1) == 0)
 	{
-		uint8_t* pImgData = decryptBuffer + 0x8;
-		uint64_t imgDataSize = content.size();
-		uint32_t* pSizeInfo = (uint32_t*)((pImgData + (imgDataSize * 1)) - 0x18);
-		uint32_t pngOff = *pSizeInfo;
-		uint8_t* pPng = pngOff + pImgData;
-		uint64_t pngDataSize = (imgDataSize - pngOff) - 0x18;
+		std::vector<uint8_t> jpngData(decryptBuffer, decryptBuffer + content.size());
+		JPNG jpngImage(jpngData);
+		std::vector<uint8_t> dumpData = jpngImage.ToPNG();
 
-		uint8_t* pJfif = pImgData;
-		uint64_t jfifSize = pngOff;
-
-		dumpStream.open(dumpFile.string() + ".jfif", std::ios::trunc | std::ios::binary);
-		dumpStream << std::string((char*)pJfif, jfifSize);
+		dumpStream.open(dumpFile.string(), std::ios::trunc | std::ios::binary);
+		dumpStream.write((const char*)dumpData.data(), dumpData.size());
 		dumpStream.close();
-		Logger::Debug("Dumped jfif at {}", dumpFile.string() + ".jfif");
-
-		dumpStream.open(dumpFile.string() + ".png", std::ios::trunc | std::ios::binary);
-		dumpStream << std::string((char*)pPng, pngDataSize);
-		dumpStream.close();
-		Logger::Debug("Dumped png at {}", dumpFile.string() + ".png");
+		Logger::Debug("Dumped {}", fileName);
 		return;
 	}
 }

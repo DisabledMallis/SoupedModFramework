@@ -21,7 +21,7 @@ set(ULTRALIGHT_LIBRARY_DIR "${SDK_ROOT}/lib")
 
 target_include_directories(Loader PRIVATE "${ULTRALIGHT_INCLUDE_DIR}")
 target_link_directories(Loader PRIVATE "${ULTRALIGHT_LIBRARY_DIR}")
-target_link_libraries(Loader PRIVATE Common fmt PolyHook_2 SoupSDK glfw opengl32 ChakraCore ModFS)
+target_link_libraries(Loader PRIVATE Common fmt PolyHook_2 SoupSDK glfw opengl32 ChakraCore ModFS Gdiplus Shlwapi)
 
 # Add target to build dir
 add_custom_command(
