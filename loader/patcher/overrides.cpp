@@ -65,10 +65,10 @@ jsfunction(Overrides::registerOverride) {
 		JsValue callback = jsargv[4];
 
 		ModRegistry::Mod* currentMod = ModRegistry::GetImmediateMod();
-		JsOverride jsOverride = new JsOverride(bundleName, fileName, modifyable, currentMod, callback);
+		JsOverride* jsOverride = new JsOverride(bundleName, fileName, modifyable, currentMod, callback);
 		size_t id = RegisterOverride(jsOverride);
 		Logger::Debug("Registered override with id {}", id);
-		return id;
+		return JsValue(id);
 	}
-	return -1;
+	return JsValue(-1);
 }
