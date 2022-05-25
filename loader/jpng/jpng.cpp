@@ -151,11 +151,11 @@ std::vector<uint8_t> JPNG::ToPNG() {
 		return resultBuffer;
 	}
 
-	uint32_t pngWidth = pngImg->GetWidth();
-	uint32_t pngHeight = pngImg->GetHeight();
+	size_t pngWidth = pngImg->GetWidth();
+	size_t pngHeight = pngImg->GetHeight();
 
-	uint32_t jfifWidth = jfifImg->GetWidth();
-	uint32_t jfifHeight = jfifImg->GetHeight();
+	size_t jfifWidth = jfifImg->GetWidth();
+	size_t jfifHeight = jfifImg->GetHeight();
 
 	if (pngWidth != jfifWidth || pngHeight != jfifHeight) {
 		Logger::Print<Logger::FAILURE>("Image data size mismatch! pngSize and jfifSize are expected to match!");
@@ -163,13 +163,13 @@ std::vector<uint8_t> JPNG::ToPNG() {
 	}
 
 	auto* jfifBmpData = new Gdiplus::BitmapData;
-	Gdiplus::Rect rect(0, 0, jfifWidth, jfifHeight);
-	jfifBmp->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, jfifBmpData);
+	Gdiplus::Rect jfifRect(0, 0, jfifWidth, jfifHeight);
+	jfifBmp->LockBits(&jfifRect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, jfifBmpData);
 	void* jfifBytes = jfifBmpData->Scan0;
 
 	auto* pngBmpData = new Gdiplus::BitmapData;
-	Gdiplus::Rect rect(0, 0, pngWidth, pngHeight);
-	pngBmp->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, pngBmpData);
+	Gdiplus::Rect pngRect(0, 0, pngWidth, pngHeight);
+	pngBmp->LockBits(&pngRect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, pngBmpData);
 	void* pngBytes = pngBmpData->Scan0;
 
 	SetupCL();
@@ -228,7 +228,18 @@ std::vector<uint8_t> JPNG::ToPNG() {
 	}
 	cl_int build_errror = clBuildProgram(program, 1, &parallelProcessor, NULL, NULL, NULL);
 	if (build_errror != CL_SUCCESS) {
-		Logger::Print<Logger::FAILURE>("Failed to build OpenCL program");
+		size_t len = 0;
+		cl_int logRes = clGetProgramBuildInfo(program, parallelProcessor, CL_PROGRAM_BUILD_LOG, 0, NULL, &len);
+		if (logRes != CL_SUCCESS) {
+			Logger::Print<Logger::FAILURE>("Failed to size OpenCL build log!");
+		}
+		char* buffer = (char*)_malloca(len);
+		logRes = clGetProgramBuildInfo(program, parallelProcessor, CL_PROGRAM_BUILD_LOG, len, buffer, NULL);
+		if (logRes != CL_SUCCESS) {
+			Logger::Print<Logger::FAILURE>("Failed to read OpenCL build log!");
+		}
+		std::string buildLogs(buffer, len);
+		Logger::Print<Logger::FAILURE>("Failed to build OpenCL program: {}", buildLogs);
 		return resultBuffer;
 	}
 
@@ -239,6 +250,33 @@ std::vector<uint8_t> JPNG::ToPNG() {
 		return resultBuffer;
 	}
 
+	cl_int argResult;
+	argResult = clSetKernelArg(kernel, 0, sizeof(cl_mem), pngPixels);
+	argResult |= clSetKernelArg(kernel, 1, sizeof(cl_mem), jfifPixels);
+	argResult |= clSetKernelArg(kernel, 2, sizeof(cl_mem), resultPixels);
+	if (argResult != CL_SUCCESS)
+	{
+		Logger::Print<Logger::FAILURE>("Error: Failed to set kernel arguments! {}", argResult);
+		return resultBuffer;
+	}
+
+	cl_int execErr = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &pngWidth, &pngHeight, 0, NULL, NULL);
+	if (execErr != CL_SUCCESS) {
+		Logger::Print<Logger::FAILURE>("Error: Failed to execute kernel");
+		return resultBuffer;
+	}
+
+	void* hostResult = _malloca(pngWidth * pngHeight * sizeof(uint32_t));
+	size_t origin[3] = { 0, 0, 0 };
+	size_t region[3] = { pngWidth, pngHeight, 1 };
+	cl_int readResult = clEnqueueReadImage(queue, resultPixels, CL_TRUE, origin, region, 0, 0, hostResult, 0, NULL, NULL);
+	if (readResult != CL_SUCCESS) {
+		Logger::Print<Logger::FAILURE>("Error: Failed to read kernel result");
+		return resultBuffer;
+	}
+
+	std::shared_ptr<Gdiplus::Bitmap> resultBmp = std::shared_ptr<Gdiplus::Bitmap>(new Gdiplus::Bitmap(pngWidth, pngHeight, 1, PixelFormat32bppARGB, (BYTE*)hostResult));
+	/*
 	std::shared_ptr<Gdiplus::Bitmap> resultImg = ImgUtils::CreateBmp(pngWidth, pngHeight);
 	for (uint64_t x = 0; x < pngWidth; x++) {
 		for (uint64_t y = 0; y < pngHeight; y++) {
@@ -257,7 +295,7 @@ std::vector<uint8_t> JPNG::ToPNG() {
 			color.SetValue(col_argb);
 			resultImg->SetPixel(x, y, color);
 		}
-	}
+	}*/
 
-	return ImgUtils::ImgToBytes(resultImg, L"image/png");
+	return ImgUtils::ImgToBytes(resultBmp, L"image/png");
 };
