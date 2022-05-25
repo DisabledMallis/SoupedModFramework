@@ -95,10 +95,39 @@ if(NOT libarchive_POPULATED)
     add_subdirectory(${libarchive_SOURCE_DIR} ${libarchive_BINARY_DIR})
 endif()
 
+# Build independent OpenCL library
+FetchContent_Declare(
+    oclh
+    GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-Headers.git
+    GIT_TAG main
+)
+FetchContent_GetProperties(oclh)
+if(NOT oclh_POPULATED)
+  FetchContent_Populate(oclh)
+  message(SRC DIR: ${oclh_SOURCE_DIR})
+  add_subdirectory(${oclh_SOURCE_DIR} ${oclh_BINARY_DIR})
+endif()
+set(OPENCL_ICD_LOADER_HEADERS_DIR ${opencl-headers_SOURCE_DIR} CACHE PATH "") # for OpenCL ICD Loader
+set(OpenCL_INCLUDE_DIR ${opencl-headers_SOURCE_DIR} CACHE PATH "") # for Boost::Compute
+
+FetchContent_Declare(
+    oclicdl
+    GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-ICD-Loader.git
+    GIT_TAG main
+)
+FetchContent_GetProperties(oclicdl)
+if(NOT oclicdl_POPULATED)
+  FetchContent_Populate(oclicdl)
+  set(USE_DYNAMIC_VCXX_RUNTIME ON)
+  message(SRC DIR: ${oclicdl_SOURCE_DIR})
+  add_subdirectory(${oclicdl_SOURCE_DIR} ${oclicdl_BINARY_DIR})
+endif()
+
 # Include library include dir
 include_directories("${glfw_SOURCE_DIR}/include/")
 include_directories("${libarchive_SOURCE_DIR}/libarchive")
 include_directories("${ch_SOURCE_DIR}/lib/jsrt/")
+include_directories("${oclh_SOURCE_DIR}/")
 
 # Final output dir for compile files
 set(FINAL_DIR "${CMAKE_CURRENT_LIST_DIR}/build/${CMAKE_BUILD_TYPE}")

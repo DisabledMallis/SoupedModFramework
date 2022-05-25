@@ -22,6 +22,10 @@ void Dumper::DumpToDisk(std::string fileName, std::filesystem::path bundlePath, 
 	std::filesystem::path cd = std::filesystem::current_path();
 	std::filesystem::path dumpDir = cd / "dump";
 	std::filesystem::path dumpFile = dumpDir / bundlePath.filename() / fileName;
+	if (std::filesystem::exists(dumpFile)) {
+		return;
+	}
+
 	std::filesystem::create_directories(dumpFile.parent_path());
 	std::ofstream dumpStream;
 
@@ -42,7 +46,7 @@ void Dumper::DumpToDisk(std::string fileName, std::filesystem::path bundlePath, 
 	if (memcmp(jpng_header, decryptBuffer, sizeof(jpng_header) - 1) == 0)
 	{
 		std::vector<uint8_t> jpngData(decryptBuffer, decryptBuffer + content.size());
-		JPNG jpngImage(jpngData);
+		JPNG jpngImage = JPNG::FromJPNG(jpngData);
 		std::vector<uint8_t> dumpData = jpngImage.ToPNG();
 
 		dumpStream.open(dumpFile.string(), std::ios::trunc | std::ios::binary);
