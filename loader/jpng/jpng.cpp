@@ -4,6 +4,7 @@
 #include <logger.h>
 #include <memory>
 #include <algorithm>
+#define __CL_ENABLE_EXCEPTIONS
 #include <CL/cl.h>
 
 JPNG JPNG::FromJPNG(std::vector<uint8_t> imageData)
@@ -130,8 +131,6 @@ bool SetupCL() {
 
 std::vector<uint8_t> JPNG::ToPNG() {
 
-	SetupCL();
-
 
 	std::vector<uint8_t> resultBuffer;
 	StartGDI();
@@ -152,14 +151,91 @@ std::vector<uint8_t> JPNG::ToPNG() {
 		return resultBuffer;
 	}
 
-	uint64_t pngWidth = pngImg->GetWidth();
-	uint64_t pngHeight = pngImg->GetHeight();
+	uint32_t pngWidth = pngImg->GetWidth();
+	uint32_t pngHeight = pngImg->GetHeight();
 
-	uint64_t jfifWidth = jfifImg->GetWidth();
-	uint64_t jfifHeight = jfifImg->GetHeight();
+	uint32_t jfifWidth = jfifImg->GetWidth();
+	uint32_t jfifHeight = jfifImg->GetHeight();
 
 	if (pngWidth != jfifWidth || pngHeight != jfifHeight) {
 		Logger::Print<Logger::FAILURE>("Image data size mismatch! pngSize and jfifSize are expected to match!");
+		return resultBuffer;
+	}
+
+	auto* jfifBmpData = new Gdiplus::BitmapData;
+	Gdiplus::Rect rect(0, 0, jfifWidth, jfifHeight);
+	jfifBmp->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, jfifBmpData);
+	void* jfifBytes = jfifBmpData->Scan0;
+
+	auto* pngBmpData = new Gdiplus::BitmapData;
+	Gdiplus::Rect rect(0, 0, pngWidth, pngHeight);
+	pngBmp->LockBits(&rect, Gdiplus::ImageLockModeRead, PixelFormat32bppARGB, pngBmpData);
+	void* pngBytes = pngBmpData->Scan0;
+
+	SetupCL();
+	const cl_image_format imageFormat = {
+		CL_ARGB,
+		CL_UNSIGNED_INT32,
+	};
+
+	cl_int jfifCopy_error;
+	cl_mem jfifPixels = clCreateImage2D(context,
+		CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+		&imageFormat,
+		jfifWidth,
+		jfifHeight,
+		1,
+		jfifBytes,
+		&jfifCopy_error);
+	if (jfifCopy_error != CL_SUCCESS) {
+		Logger::Print<Logger::FAILURE>("Couldn't make OpenCL buffer for jfif data");
+		return resultBuffer;
+	}
+
+	cl_int pngCopy_error;
+	cl_mem pngPixels = clCreateImage2D(context,
+		CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+		&imageFormat,
+		pngWidth,
+		pngHeight,
+		1,
+		pngBytes,
+		&pngCopy_error);
+	if (pngCopy_error != CL_SUCCESS) {
+		Logger::Print<Logger::FAILURE>("Couldn't make OpenCL buffer for png data");
+		return resultBuffer;
+	};
+
+	cl_int resultBuff_error;
+	cl_mem resultPixels = clCreateImage2D(context,
+		CL_MEM_READ_WRITE,
+		&imageFormat,
+		pngWidth,
+		pngHeight,
+		1,
+		nullptr,
+		&resultBuff_error);
+
+	const char* convertToPngSrc =
+		#include "jpngToPng.cl"
+		;
+
+	cl_int prog_error;
+	cl_program program = clCreateProgramWithSource(context, 1, &convertToPngSrc, NULL, &prog_error);
+	if (prog_error != CL_SUCCESS) {
+		Logger::Print<Logger::FAILURE>("Failed to create OpenCL program with source");
+		return resultBuffer;
+	}
+	cl_int build_errror = clBuildProgram(program, 1, &parallelProcessor, NULL, NULL, NULL);
+	if (build_errror != CL_SUCCESS) {
+		Logger::Print<Logger::FAILURE>("Failed to build OpenCL program");
+		return resultBuffer;
+	}
+
+	cl_int kernel_error;
+	cl_kernel kernel = clCreateKernel(program, "jpngToPng", &kernel_error);
+	if (kernel_error != CL_SUCCESS) {
+		Logger::Print<Logger::FAILURE>("Failed to create cl_kernel");
 		return resultBuffer;
 	}
 
