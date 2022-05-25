@@ -175,7 +175,7 @@ std::vector<uint8_t> JPNG::ToPNG() {
 	SetupCL();
 	const cl_image_format imageFormat = {
 		CL_ARGB,
-		CL_UNSIGNED_INT32,
+		CL_UNSIGNED_INT8,
 	};
 
 	cl_int jfifCopy_error;

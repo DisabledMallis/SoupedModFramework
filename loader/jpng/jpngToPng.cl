@@ -3,13 +3,10 @@ R"(
 	{
 		int2 coord = (int2)(get_global_id(0), get_global_id(1));
 
-		uint4 opacity = read_imageui(opacityLayer, coord);
-		uint4 color = read_imageui(colorLayer, coord);
+		uchar4 opacity = read_imageui(opacityLayer, coord);
+		uchar4 color = read_imageui(colorLayer, coord);
 
-		uchar* bytesOpacity = (uchar*)&opacity;
-		uchar* bytesColor = (uchar*)&color;
-
-		uint4 mix = (uint4)(bytesOpacity[1], bytesColor[1], bytesColor[2], bytesColor[3]);
+		uchar4 mix = (uchar4)(opacity[1], color[1], color[2], color[3]);
 
 		write_imageui(resultImage, mix);
 	}
