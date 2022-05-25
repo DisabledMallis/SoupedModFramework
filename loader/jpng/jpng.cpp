@@ -132,6 +132,7 @@ std::vector<uint8_t> JPNG::ToPNG() {
 
 	SetupCL();
 
+
 	std::vector<uint8_t> resultBuffer;
 	StartGDI();
 
