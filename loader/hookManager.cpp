@@ -331,7 +331,6 @@ bool hkIsUpgradeUnlocked(size_t param_1, size_t param_2, int param_3, int param_
 	return true;
 }
 
-typedef void(*AsmFunc)();
 bool HookManager::ApplyHooks()
 {
 	Config* config = Config::GetConfig();
@@ -351,8 +350,8 @@ bool HookManager::ApplyHooks()
 
 	//Bootstrapper
 	CodeHolder bsCode;
-	bsCode.init(runtime.environment());
 	bsCode.setLogger(&logger);
+	bsCode.init(runtime.environment());
 	x86::Assembler bsAsm(&bsCode);
 	//Push registers that need to be saved
 	bsAsm.push(x86::rcx);
@@ -378,22 +377,29 @@ bool HookManager::ApplyHooks()
 	bsAsm.sub(x86::rax, x86::r8);
 	bsAsm.jmp(gameRet);
 	//Create the bootstrap func
-	AsmFunc bs;
-	runtime.add(&bs, &bsCode);
-	
+	void* bs;
+	Error err = runtime.add(&bs, &bsCode);
+	if (err) {
+		::Logger::Debug("AsmJit failed: {}", DebugUtils::errorAsString(err));
+		return 1;
+	}
+
 	//Detour
+	/*
 	CodeHolder dCode;
 	dCode.setLogger(&logger);
 	dCode.init(runtime.environment());
 	x86::Assembler dAsm(&dCode);
 	Label lD = dAsm.newLabel();
 	dAsm.jmp(bs);
+	dCode.
+	*/
 
 	//Create detour func (TODO: Write to the game's mem instead)
-	AsmFunc det;
-	runtime.add(&det, &dCode);
-	::Logger::Debug("Bootstrapper generated here: {}", (void*)bs);
-	::Logger::Debug("Detour generated here: {}", (void*)det);
+	//AsmFunc det;
+	//runtime.add(&det, &dCode);
+	::Logger::Debug("Bootstrapper generated here: {}", bs);
+	//::Logger::Debug("Detour generated here: {}", (void*)det);
 	std::cin.get();
 
 	/*
