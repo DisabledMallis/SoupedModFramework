@@ -331,7 +331,7 @@ bool hkIsUpgradeUnlocked(size_t param_1, size_t param_2, int param_3, int param_
 	return true;
 }
 
-typedef void(*Bootstrapper)();
+typedef void(*AsmFunc)();
 bool HookManager::ApplyHooks()
 {
 	Config* config = Config::GetConfig();
@@ -343,41 +343,57 @@ bool HookManager::ApplyHooks()
 	}
 	
 	using namespace asmjit;
+	FileLogger logger(stdout);
 	JitRuntime runtime;
-	CodeHolder code;
 
-	code.init(runtime.environment());
+	x86::Mem gameExec = x86::ptr(oPostDecrypt);
+	x86::Mem gameRet = x86::ptr(oPostDecrypt+6);
 
 	//Bootstrapper
-	x86::Assembler a(&code);
+	CodeHolder bsCode;
+	bsCode.init(runtime.environment());
+	bsCode.setLogger(&logger);
+	x86::Assembler bsAsm(&bsCode);
 	//Push registers that need to be saved
-	a.push(x86::rcx);
-	a.push(x86::rcx);
-	a.push(x86::rsi);
-	a.push(x86::rdi);
-	a.push(x86::r8 );
-	a.push(x86::r13);
-	a.push(x86::r15);
+	bsAsm.push(x86::rcx);
+	bsAsm.push(x86::rcx);
+	bsAsm.push(x86::rsi);
+	bsAsm.push(x86::rdi);
+	bsAsm.push(x86::r8 );
+	bsAsm.push(x86::r13);
+	bsAsm.push(x86::r15);
 	//Hook code here (call the callback function)
-	
 
 	//Pop registers for returning to game code
-	a.pop(x86::rcx);
-	a.pop(x86::rcx);
-	a.pop(x86::rsi);
-	a.pop(x86::rdi);
-	a.pop(x86::r8);
-	a.pop(x86::r13);
-	a.pop(x86::r15);
+	bsAsm.pop(x86::rcx);
+	bsAsm.pop(x86::rcx);
+	bsAsm.pop(x86::rsi);
+	bsAsm.pop(x86::rdi);
+	bsAsm.pop(x86::r8);
+	bsAsm.pop(x86::r13);
+	bsAsm.pop(x86::r15);
 
 	//Restore to game code
-	a.mov(x86::rax, x86::rcx);
-	a.sub(x86::rax, x86::r8);
-	//a.jmp(game's code);
+	bsAsm.mov(x86::rax, x86::rcx);
+	bsAsm.sub(x86::rax, x86::r8);
+	bsAsm.jmp(gameRet);
+	//Create the bootstrap func
+	AsmFunc bs;
+	runtime.add(&bs, &bsCode);
 	
-	Bootstrapper bs;
-	runtime.add(&bs, &code);
+	//Detour
+	CodeHolder dCode;
+	dCode.setLogger(&logger);
+	dCode.init(runtime.environment());
+	x86::Assembler dAsm(&dCode);
+	Label lD = dAsm.newLabel();
+	dAsm.jmp(bs);
+
+	//Create detour func (TODO: Write to the game's mem instead)
+	AsmFunc det;
+	runtime.add(&det, &dCode);
 	::Logger::Debug("Bootstrapper generated here: {}", (void*)bs);
+	::Logger::Debug("Detour generated here: {}", (void*)det);
 	std::cin.get();
 
 	/*
