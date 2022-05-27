@@ -6,10 +6,12 @@
 #include <ipc.h>
 #include <SoupSTL.h>
 #include "patcher/patchers/BattleMenuPatcher.h"
+#include "patcher/overrides.h"
 #include <stdjs.h>
 #include <config.h>
 #include <ModFS.h>
 #include "ui/ui.h"
+#include "modRegistry.h"
 
 static PLH::x64Detour* plhwWinMain;
 static uint64_t owWinMain;
@@ -21,7 +23,7 @@ int __stdcall hkwWinMain(
 ) {
 	//Move proxy dll back into 'proxies' folder
 	std::filesystem::path cd = std::filesystem::current_path();
-	std::filesystem::rename("./wininet.dll", "./proxies/wininet.dll");
+	std::filesystem::rename("./Winhttp.dll", "./proxies/Winhttp.dll");
 
 	//Load config
 	Config::GetConfig();
@@ -73,11 +75,17 @@ int __stdcall hkwWinMain(
 		JSUtils::JsValue& global = JSUtils::GetGlobalObject();
 		JSUtils::JsValue souped = JSUtils::JsValue("souped", true);
 
+		JSUtils::JsValue modfs = JSUtils::JsValue("mfs", true);
+		JSUtils::JsValue readFile = JSUtils::JsValue((JsNativeFunction)ModRegistry::JS::readFile);
+		modfs.SetProperty("readFile", readFile);
+		souped.SetProperty("mfs", modfs);
+
 		JSUtils::JsValue registerPatcher = JSUtils::JsValue((JsNativeFunction)Patchers::registerPatcher);
+		JSUtils::JsValue registerOverride = JSUtils::JsValue((JsNativeFunction)Overrides::registerOverride);
 		JSUtils::JsValue notify = JSUtils::JsValue((JsNativeFunction)UI::JsNotify);
 		souped.SetProperty("registerPatcher", registerPatcher);
+		souped.SetProperty("registerOverride", registerOverride);
 		souped.SetProperty("notify", notify);
-
 		global.SetProperty("souped", souped);
 
 		Logger::Print("souped API ready");
@@ -89,15 +97,10 @@ int __stdcall hkwWinMain(
 	JSUtils::SetupRuntime();
 
 	//Load all mods
-	std::vector<ModFS::Mod> allMods = ModFS::LoadAllMods(cd);
-
-	for (auto& mod : allMods) {
-		Logger::Print("Loading {} version {}", mod.meta.name, mod.meta.version);
-		for (auto& script : mod.meta.scripts) {
-			Logger::Debug("Loading script: {}", script);
-			std::string scriptCode = mod.ReadEntry(script);
-			JSUtils::RunCode(mod.meta.name + "/" + script, scriptCode);
-		}
+	ModRegistry::LoadAllMods(cd);
+	std::vector<ModRegistry::Mod*> allMods = ModRegistry::GetMods();
+	for (auto mod : allMods) {
+		mod->Run();
 	}
 
 	return PLH::FnCast(owWinMain, hkwWinMain)(
@@ -107,18 +110,42 @@ int __stdcall hkwWinMain(
 		nShowCmd);
 }
 
+static PLH::x64Detour* plhFreeConsole = nullptr;
+static uint64_t oFreeConsole = (uint64_t)FreeConsole;
+bool hkFreeConsole() {
+	Logger::Debug("The game tried to free the console window");
+	return false;
+}
+
 int initialize() {
 	SetConsoleTitleA("Console");
 	
 	Logger::Print("Welcome to SoupedModFramework");
-	Logger::Print("Hooking WinMain...");
+
+	//Get winmain func
+	
+	//Patch out FreeConsole
+	uint64_t pCreateWindow = Memory::FindSig("?? 89 ?? ?? ?? ?? 89 ?? ?? ?? ?? 89 ?? ?? ?? 55 41 ?? 41 ?? 41 ?? 41 ?? 48 ?? ?? ?? ?? ?? ?? ?? 48 81 ?? ?? ?? ?? ?? 48 8B ?? ?? ?? ?? ?? 48 33 ?? ?? 89 ?? ?? ?? ?? ?? 4C 8B ?? 4C 63");
+	Logger::Debug("Patching WinMain...");
+	uint8_t* pFreeConCall = (uint8_t*)(pCreateWindow + 0x5C);
+	uint64_t callSize = 6;
+	DWORD oldProt;
+	VirtualProtect((LPVOID)pFreeConCall, callSize, PAGE_EXECUTE_READWRITE, &oldProt);
+	for (int i = 0; i < callSize; i++) {
+		pFreeConCall[i] = 0x90;
+	}
+	Logger::Debug("WinMain Patched @ {}", (void*)pFreeConCall);
+
+	Logger::Debug("Hooking WinMain...");
 	uint64_t pwWinMain = Memory::FindSig("?? 89 ?? ?? ?? 55 56 57 41 ?? 41 ?? 41 ?? 41 ?? 48 ?? ?? ?? ?? ?? ?? ?? 48 81 ?? ?? ?? ?? ?? 48 8B ?? ?? ?? ?? ?? 48 33 ?? ?? 89 ?? ?? ?? ?? ?? 4D 8B ?? ?? 89 ?? ?? 4D");
 	plhwWinMain = new PLH::x64Detour((uint64_t)pwWinMain, (uint64_t)hkwWinMain, &owWinMain);
 	if (!plhwWinMain->hook()) {
 		Logger::Print<Logger::FAILURE>("Failed to hook main");
 		return false;
 	}
-	Logger::Print("WinMain hooked");
+	Logger::Debug("WinMain hooked");
+
+	
 	return 0;
 }
 

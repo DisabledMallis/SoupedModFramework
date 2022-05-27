@@ -21,17 +21,17 @@ Usage:
 #define EXPORT comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
 
 //HMODULE for the original dll
-HMODULE winINet;
-size_t(__stdcall* InternetGetConnectedState_orig)(size_t, int);
+HMODULE WinHttp;
+bool(__stdcall* oWinHttpGetIEProxyConfigForCurrentUser)(void*);
 
-extern "C" __declspec(dllexport) size_t __stdcall InternetGetConnectedState(size_t lpdwFlags, int dwReserved) {
-	int result = InternetGetConnectedState_orig(lpdwFlags, dwReserved);
+extern "C" __declspec(dllexport) bool __stdcall WinHttpGetIEProxyConfigForCurrentUser(void* proxyConfig) {
+	int result = oWinHttpGetIEProxyConfigForCurrentUser(proxyConfig);
 	return result;
 }
 extern "C" __declspec(dllexport) void __stdcall RestoreSelf() {
 	//Move proxy dll back into 'proxies' folder
 	std::filesystem::path cd = std::filesystem::current_path();
-	std::filesystem::rename("./wininet.dll", "./proxies/wininet.dll");
+	std::filesystem::rename("./Winhttp.dll", "./proxies/Winhttp.dll");
 }
 
 auto initialize(HMODULE proxyDll) -> int {
@@ -54,23 +54,23 @@ auto initialize(HMODULE proxyDll) -> int {
 #endif
 
 	std::string sys32Str(sys32Path);
-	std::string wininetPath = sys32Str + "\\wininet.dll";
+	std::string winhttpPath = sys32Str + "\\Winhttp.dll";
 
 	//Load the original wininet dll
-	winINet = LoadLibraryA(wininetPath.c_str());
-	if (winINet == NULL) {
-		fmt::print("Failed to load original wininet\n");
-		MessageBoxA(0, "Failed to find wininet.dll in System32", "Proxy Error", MB_OK);
+	WinHttp = LoadLibraryA(winhttpPath.c_str());
+	if (WinHttp == NULL) {
+		fmt::print("Failed to load original Winhttp\n");
+		MessageBoxA(0, "Failed to find Winhttp.dll in System32", "Proxy Error", MB_OK);
 		exit(1);
 	}
 	else {
 		fmt::print("Loaded original wininet\n");
 	}
 	//Get the original function to call when requested
-	InternetGetConnectedState_orig = (size_t(__stdcall*)(size_t, int))GetProcAddress(winINet, "InternetGetConnectedState");
-	if (InternetGetConnectedState_orig == NULL) {
-		fmt::print("Failed to find InternetGetConnectedState\n");
-		MessageBoxA(0, "Failed to find InternetGetConnectedState", "Proxy Error", MB_OK);
+	oWinHttpGetIEProxyConfigForCurrentUser = (bool(__stdcall*)(void*))GetProcAddress(WinHttp, "WinHttpGetIEProxyConfigForCurrentUser");
+	if (oWinHttpGetIEProxyConfigForCurrentUser == NULL) {
+		fmt::print("Failed to find WinHttpGetIEProxyConfigForCurrentUser\n");
+		MessageBoxA(0, "Failed to find WinHttpGetIEProxyConfigForCurrentUser", "Proxy Error", MB_OK);
 		exit(1);
 	}
 

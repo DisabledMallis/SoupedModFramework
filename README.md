@@ -1,6 +1,19 @@
 # SoupedModFramework
 An open source modding framework for Bloons TD Battles 2
 
+Please leave a ⭐️ <3
+
+# Getting Started
+SMF is simple to install, follow the [installation guide](https://souped.dev/guide/Install.html) for instructions!
+
+# Usage
+For mod creation, check out the [development guide](https://souped.dev/develop/).
+
+# Community
+Looking for mods, or just to talk with other members in the SMF community?
+Join the SMF [Discord Server](https://discord.gg/nPcBPyHP4c)!
+
+http://bloonsmods.com
 
 # Structure
 ## Common

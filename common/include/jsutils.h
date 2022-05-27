@@ -5,6 +5,7 @@
 #include <functional>
 #include <filesystem>
 #include <map>
+#include <vector>
 
 #define jsfunction(funcName) JsValueRef CALLBACK funcName(JsValueRef callee, bool isConstructCall, JsValueRef* arguments, short argumentCount, void *callbackState)
 #define jsargc argumentCount

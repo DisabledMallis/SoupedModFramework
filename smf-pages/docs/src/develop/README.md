@@ -24,6 +24,7 @@ To get started, create a new folder inside of the 'mods' folder. (If there is no
         "NeverGlow"
     ],
     "description": "This is an example mod that does very cool things!",
+    "modid": "example",
     "name": "Example Mod",
     "scripts": [
         "exampleScript.js"
@@ -36,11 +37,12 @@ So, what do these fields mean?
 
 -   `authors` - A list of who created the mod
 -   `description` - A description of what the mod does
+-   `modid` - The mod's ID, should not contain: Capital letters, Spaces, Numbers
 -   `name` - The name of the mod
 -   `scripts` - A list of every script file this mod needs to load
 -   `version` - The version of the mod
 
-It is important that the file includes a `name`, `version` and `scripts` field. You shouldn't leave out the other fields, but it wont be very problematic if you do.
+It is important that the file includes a `name`, `modid`, `version` and `scripts` field. You shouldn't leave out the other fields, but it wont be very problematic if you do.
 
 ### Scripting part 1
 
@@ -51,20 +53,21 @@ Inside of our script, we may want to create something called a 'patcher'. A patc
 To register a patcher, simply add this into your mod's JS file:
 
 ```js
-souped.registerJsonPatcher(myPatcher, "tack_shooter.tower_blueprint");
+souped.registerJsonPatcher("simulation", "tack_shooter.tower_blueprint", myPatcher);
 ```
 
 Now you may be wondering what `myPatcher` is. It's important to create the actual patcher itself _before_ that line in order for it to be registered. Your code may look like the following:
 
 ```js
-function myPatcher(data) {
+function myPatcher(bundleName, fileName, data) {
     return { successful: false, data: data };
 };
 
-souped.registerJsonPatcher(myPatcher, "tack_shooter.tower_blueprint");
+souped.registerJsonPatcher("simulation", "tack_shooter.tower_blueprint", myPatcher);
 ```
 
 The next missing piece of this puzzle is the `"tack_shooter.tower_blueprint"` string. This parameter of the function is a 'selector' for which files this patcher should patch. If you were to write `".tower_blueprint"`, that would mean every single file with `".tower_blueprint"` in its file name would be patched by this patcher, effectively giving you a way to modify every single tower in the game with a single patcher.
+The `"simulation"` is the name of the bundle (.jet file) containing the `"tack_shooter.tower_blueprint"` file. If you want to search *every* bundle, you can put `"*"` instead.
 
 But what is a "tower_blueprint" file?
 
@@ -97,7 +100,7 @@ tack_shooter.tower_blueprint example:
 Our script:
 
 ```js
-function myPatcher(data) {
+function myPatcher(bundleName, fileName, data) {
     //Get the variables
     var tackVars = data["variables"];
     //Loop through the variables to find the 'range' variable
@@ -123,7 +126,7 @@ function myPatcher(data) {
     return { successful: true, data: data };
 };
 
-souped.registerJsonPatcher(myPatcher, "tack_shooter.tower_blueprint");
+souped.registerJsonPatcher("simulation", "tack_shooter.tower_blueprint", myPatcher);
 ```
 
 ### Sharing your mod

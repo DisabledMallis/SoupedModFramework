@@ -51,7 +51,6 @@ FetchContent_Declare(
 FetchContent_GetProperties(glfw)
 if(NOT glfw_POPULATED)
     FetchContent_Populate(glfw)
-    include_directories("${glfw_SOURCE_DIR}/include/")
     add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
 endif()
 
@@ -72,6 +71,18 @@ if(NOT ch_POPULATED)
     )
 endif()
 
+#Add zlib
+FetchContent_Declare(
+    zlib
+    GIT_REPOSITORY https://github.com/madler/zlib.git
+    GIT_TAG master
+)
+FetchContent_GetProperties(zlib)
+if(NOT zlib_POPULATED)
+    FetchContent_Populate(zlib)
+    add_subdirectory(${zlib_SOURCE_DIR} ${zlib_BINARY_DIR})
+endif()
+
 #Add libarchive
 FetchContent_Declare(
     libarchive
@@ -81,10 +92,12 @@ FetchContent_Declare(
 FetchContent_GetProperties(libarchive)
 if(NOT libarchive_POPULATED)
     FetchContent_Populate(libarchive)
-	include_directories("${libarchive_SOURCE_DIR}/libarchive")
     add_subdirectory(${libarchive_SOURCE_DIR} ${libarchive_BINARY_DIR})
 endif()
 
+# Include library include dir
+include_directories("${glfw_SOURCE_DIR}/include/")
+include_directories("${libarchive_SOURCE_DIR}/libarchive")
 include_directories("${ch_SOURCE_DIR}/lib/jsrt/")
 
 # Final output dir for compile files
