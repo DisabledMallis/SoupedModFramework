@@ -1,8 +1,8 @@
 #pragma once
 
 #include <stdint.h>
-#include <SoupSTL.h>
-;
+#include <ghstl/string>
+
 namespace Soup {
 	namespace Signatures {
 		static constexpr const char* SIG_LOAD_ASSET = "48 8B ?? 55 53 56 57 41 ?? 41 ?? 41 ?? 41 ?? 48 ?? ?? ?? ?? 48 81 ?? ?? ?? ?? ?? ?? 29 ?? ?? ?? 29 ?? ?? 48 8B ?? ?? ?? ?? ?? 48 33 ?? ?? 89 ?? ?? ?? 89";
@@ -38,15 +38,15 @@ namespace Soup {
 		}* pEntryData; //0x0008
 
 	public:
-		Soup::String GetName() {
-			return Soup::String(entryPath, pEntryData->filenameLen);
+		ghstl::string GetName() {
+			return ghstl::string(entryPath, pEntryData->filenameLen);
 		}
 	};
 	class ZipIterator
 	{
 	public:
 		char pad_0000[56]; //0x0000
-		Soup::String* psArchivePath; //0x0038
+		ghstl::string* psArchivePath; //0x0038
 		ZipEntry* pZipEntry; //0x0040
 	};
 	class ZipReader {

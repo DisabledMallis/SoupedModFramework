@@ -345,14 +345,18 @@ bool HookManager::ApplyHooks()
 	FileLogger logger(stdout);
 	JitRuntime runtime;
 
-	x86::Mem gameExec = x86::ptr(oPostDecrypt);
-	x86::Mem gameRet = x86::ptr(oPostDecrypt+6);
-
 	//Bootstrapper
 	CodeHolder bsCode;
 	bsCode.setLogger(&logger);
 	bsCode.init(runtime.environment());
 	x86::Assembler bsAsm(&bsCode);
+
+	//Useful memory locations
+	uint64_t hookLoc = oPostDecrypt;
+	uint64_t hookRet = oPostDecrypt + 6;
+	Label entryLabel = bsAsm.newLabel();
+	bsAsm.bind(entryLabel);
+
 	//Push registers that need to be saved
 	bsAsm.push(x86::rcx);
 	bsAsm.push(x86::rcx);
@@ -375,13 +379,16 @@ bool HookManager::ApplyHooks()
 	//Restore to game code
 	bsAsm.mov(x86::rax, x86::rcx);
 	bsAsm.sub(x86::rax, x86::r8);
-	bsAsm.jmp(gameRet);
+	Label addrPool = bsAsm.newLabel();
+	bsAsm.jmp(x86::ptr(addrPool));
+	bsAsm.bind(addrPool);
+	bsAsm.embedUInt64(hookRet);
+
 	//Create the bootstrap func
 	void* bs;
 	Error err = runtime.add(&bs, &bsCode);
 	if (err) {
 		::Logger::Debug("AsmJit failed: {}", DebugUtils::errorAsString(err));
-		return 1;
 	}
 
 	//Detour
