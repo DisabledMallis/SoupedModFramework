@@ -12,21 +12,21 @@ If there are no Releases, download an experimental version. (See below)
 
 Alternatively, you can download experimental SMF builds from GitHub Actions Artifacts [here](https://github.com/DisabledMallis/SoupedModFramework/actions). Please note that these builds will likely have even more problems than releases. To download one, select the `Build SMF` workflow,
 
-![](./install/workflows.png)
+![](./img/workflows.png)
 
 and then choose the newest (top most) working build (the one with a green check mark). Scroll to the bottom and download the `SoupedModFramework` artifact.
 
-![](./install/artifacts.png)
+![](./img/artifacts.png)
 
 ## Preparing the game
 
 Before we can install SMF, we need to find our game's files. Inside of Steam, navigate to your Steam Library. Right click on Bloons TD Battles 2 and select "properties".
 
-![](./install/properties.png)
+![](./img/properties.png)
 
 Next, select the "Local Files" tab and then "Browse".
 
-![](./install/browse.png)
+![](./img/browse.png)
 
 ## Extracting
 
