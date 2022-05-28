@@ -12,3 +12,4 @@ neutralino.js
 .storage
 *.log
 config.json
+launcher/temp/*

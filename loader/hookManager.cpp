@@ -20,10 +20,153 @@
 #include <Profile.h>
 #include "ui/ui.h"
 #include <ShlObj_core.h>
+#include <asmjit/asmjit.h>
 
 std::mutex patchworkMutex;
 std::stack<std::array<std::string, 2>> patchworkStack;
 static bool initUi = false;
+static auto fnResizeBuffer = (void(__fastcall*)(void**, long long))Memory::FindSig(Soup::Signatures::SIG_BIN2_RESIZEBUFFER);
+
+/*
+struct ParseHook {
+	PLH::x64Detour* detour;
+	uint64_t oFunction;
+	void* parseResult;
+};
+static std::vector<ParseHook> parseHooks;
+void* hkParseAsset(void* parseResult, Soup::ArrayList<uint8_t>* bytes) {
+	Logger::Debug("Beginning patchwork");
+	goto beginHook;
+exitHook:
+	for (ParseHook& parseHook : parseHooks) {
+		if (parseHook.parseResult == parseResult) {
+			return PLH::FnCast(parseHook.oFunction, hkParseAsset)(parseResult, bytes);
+		}
+	}
+
+beginHook:
+	patchworkMutex.lock();
+	//If theres nothing to patch we're done
+	if (patchworkStack.empty()) {
+		patchworkMutex.unlock();
+		goto exitHook;
+	}
+	//Get the first file in the stack
+	std::array<std::string, 2> targetInfo = patchworkStack.top();
+	std::string targetBundle = targetInfo[0];
+	std::string targetFile = targetInfo[1];
+	//Pop it off the stack when the name is stored
+	patchworkStack.pop();
+
+	Logger::Debug("Patching {}", targetFile);
+
+	//Patch the file
+	std::string fileContent = std::string((char*)bytes->at(0), bytes->count());
+	Overrides::RunOverrides(targetBundle, targetFile, fileContent, false);
+	Patchers::PatchData(targetBundle, targetFile, fileContent);
+	Overrides::RunOverrides(targetBundle, targetFile, fileContent, true);
+
+	//Safety checks
+	size_t bufferSize = bytes->count();
+	if (bufferSize < fileContent.size()) {
+		Logger::Debug("WARNING: There is not enough space allocated to apply this patch!");
+		fnResizeBuffer((void**)bytes, fileContent.size());
+	}
+
+	//Place the patched data back into the buffer
+	memset(bytes->begin(), 0, bytes->count());
+	memcpy_s(bytes->begin(), bytes->count(), fileContent.c_str(), fileContent.size());
+
+	//Print we finished patching
+	Logger::Debug("Patched {}", targetFile);
+
+	patchworkMutex.unlock();
+	goto exitHook;
+}
+
+static PLH::x64Detour* plhLoadAsset;
+static uint64_t oLoadAsset = Memory::FindSig(Soup::Signatures::SIG_LOAD_ASSET);
+static std::vector<uint64_t> patchedParsers;
+void hkLoadAsset(int* param_1, Soup::WinFileIO* pWinFileIO, Soup::String* type, uint64_t parser,
+	void* parseResult, Soup::String* pathInArchive, void* param_7, char isEncrypted) {
+	bool isPatched = false;
+	for (uint64_t pParser : patchedParsers) {
+		if (parser == pParser) {
+			isPatched = true;
+		}
+	}
+	if (!isPatched) {
+		uint64_t pfParseAsset = *(uint64_t*)(*(uint64_t*)parser + 0x10);
+		uint64_t oParseAsset = 0;
+		PLH::x64Detour* plhLoader = new PLH::x64Detour(pfParseAsset, (uint64_t)hkParseAsset, &oParseAsset);
+		if (!plhLoader->hook()) {
+			Logger::Debug("Failed to hook LoadAsset parser");
+		}
+		else {
+			parseHooks.emplace_back(plhLoader, oParseAsset, parseResult);
+		}
+	}
+
+	Logger::Debug("Patching {}", pathInArchive->cpp_str());
+	patchworkMutex.lock();
+	patchworkStack.push({ "", pathInArchive->cpp_str()});
+	patchworkMutex.unlock();
+
+	PLH::FnCast(oLoadAsset, hkLoadAsset)(param_1, pWinFileIO, type, parser, parseResult, pathInArchive, param_7, isEncrypted);
+}
+*/
+
+//48 8b c1 49 2b c0 48 8d 50 ?? 48 3b d0 73 ?? 4a 8d 04 02
+
+static PLH::x64Detour* plhPostDecrypt;
+static uint64_t oPostDecrypt = Memory::FindSig("48 8b c1 49 2b c0 48 8d 50 ?? 48 3b d0 73 ?? 4a 8d 04 02");
+void PostDecrypt(char* endPtr, size_t size, char* beginPtr) {
+	patchworkMutex.lock();
+	//If theres nothing to patch we're done
+	if (patchworkStack.empty()) {
+		patchworkMutex.unlock();
+		return;
+	}
+	//Get the first file in the stack
+	std::array<std::string, 2> targetInfo = patchworkStack.top();
+	std::string targetBundle = targetInfo[0];
+	std::string targetFile = targetInfo[1];
+	//Pop it off the stack when the name is stored
+	patchworkStack.pop();
+
+	//Print we are patching it
+	Logger::Debug("Patching {}", targetFile);
+
+	//Patch the file
+	std::string fileContent = std::string(beginPtr, size);
+	Overrides::RunOverrides(targetBundle, targetFile, fileContent, false);
+	Patchers::PatchData(targetBundle, targetFile, fileContent);
+	Overrides::RunOverrides(targetBundle, targetFile, fileContent, true);
+
+	//Safety checks
+	if (size < fileContent.size()) {
+		Logger::Debug("WARNING: There is not enough space allocated to apply this patch!");
+		fnResizeBuffer((void**)beginPtr, size);
+	}
+
+	//Place the patched data back into the buffer
+	memset(beginPtr, 0, size);
+	memcpy_s(beginPtr, size, fileContent.c_str(), fileContent.size());
+
+	//Print we finished patching
+	Logger::Debug("Patched {}", targetFile);
+
+	patchworkMutex.unlock();
+	return;
+}
+void* hkPostDecrypt(char* endPtr, size_t size, char* beginPtr) {
+	PostDecrypt(endPtr, size, beginPtr);
+	return PLH::FnCast(oPostDecrypt, hkPostDecrypt)(endPtr, size, beginPtr);
+}
+//Derive key
+//?? ?? ?? 71 ?? ?? ?? 33 ?? ?? ?? 0B ?? ?? ?? B5 ?? ?? ?? E5 ?? ?? ?? 23 ?? ?? ?? CF
+//(THere are multiple instances)
+
 
 static PLH::x64Detour* plhDecompressFile;
 static uint64_t oDecompressFile = Memory::FindSig(Soup::Signatures::SIG_ZIPCPP_DECOMPRESSFILE);
@@ -62,9 +205,8 @@ void* hkDecompressFile(Soup::ZipReader* pZipReader) {
 }
 
 static PLH::x64Detour* plhDecryptBytes;
-static uint64_t oDecryptBytes = Memory::FindSig(Soup::Signatures::SIG_BIN2_DECRYPTBYTES);
-static auto fnResizeBuffer = (void(__fastcall*)(void**, long long))Memory::FindSig(Soup::Signatures::SIG_BIN2_RESIZEBUFFER);
-void* hkDecryptBytes(Soup::ArrayList<uint8_t>* bytes) {
+//static uint64_t oDecryptBytes = Memory::FindSig(Soup::Signatures::SIG_BIN2_DECRYPTBYTES);
+/*void* hkDecryptBytes(Soup::ArrayList<uint8_t>* bytes) {
 	void* result = PLH::FnCast(oDecryptBytes, hkDecryptBytes)(bytes);
 
 	patchworkMutex.lock();
@@ -83,7 +225,7 @@ void* hkDecryptBytes(Soup::ArrayList<uint8_t>* bytes) {
 	//Print we are patching it
 	Logger::Debug("Patching {}", targetFile);
 
-	/*Patch the file*/
+	//Patch the file
 	std::string fileContent = std::string((char*)bytes->at(0), bytes->count());
 	Overrides::RunOverrides(targetBundle, targetFile, fileContent, false);
 	Patchers::PatchData(targetBundle, targetFile, fileContent);
@@ -105,7 +247,7 @@ void* hkDecryptBytes(Soup::ArrayList<uint8_t>* bytes) {
 
 	patchworkMutex.unlock();
 	return result;
-}
+}*/
 
 static HWND hGameWindow;
 static WNDPROC oWndProc;
@@ -184,7 +326,7 @@ bool hkIsTowerUnlocked(size_t param_1, int param_2) {
 }
 
 static PLH::x64Detour* plhIsUpgradeUnlocked = nullptr;
-static uint64_t oIsUpgradeUnlocked = Memory::FindSig(Soup::Signatures::SIG_PROFILE_ISUPGRADEUNLOCKED);;
+static uint64_t oIsUpgradeUnlocked = Memory::FindSig(Soup::Signatures::SIG_PROFILE_ISUPGRADEUNLOCKED);
 bool hkIsUpgradeUnlocked(size_t param_1, size_t param_2, int param_3, int param_4) {
 	return true;
 }
@@ -192,18 +334,96 @@ bool hkIsUpgradeUnlocked(size_t param_1, size_t param_2, int param_3, int param_
 bool HookManager::ApplyHooks()
 {
 	Config* config = Config::GetConfig();
-
+	
 	plhDecompressFile = new PLH::x64Detour(oDecompressFile, (uint64_t)hkDecompressFile, &oDecompressFile);
 	if (!plhDecompressFile->hook()) {
 		Logger::Print<Logger::FAILURE>("Failed to hook ZipCpp::DecompressFile");
 		return false;
 	}
+	
+	using namespace asmjit;
+	FileLogger logger(stdout);
+	JitRuntime runtime;
 
+	//Bootstrapper
+	CodeHolder bsCode;
+	bsCode.setLogger(&logger);
+	bsCode.init(runtime.environment());
+	x86::Assembler bsAsm(&bsCode);
+
+	//Useful memory locations
+	uint64_t hookLoc = oPostDecrypt;
+	uint64_t hookRet = oPostDecrypt + 6;
+	Label entryLabel = bsAsm.newLabel();
+	bsAsm.bind(entryLabel);
+
+	//Push registers that need to be saved
+	bsAsm.push(x86::rcx);
+	bsAsm.push(x86::rcx);
+	bsAsm.push(x86::rsi);
+	bsAsm.push(x86::rdi);
+	bsAsm.push(x86::r8 );
+	bsAsm.push(x86::r13);
+	bsAsm.push(x86::r15);
+	//Hook code here (call the callback function)
+
+	//Pop registers for returning to game code
+	bsAsm.pop(x86::rcx);
+	bsAsm.pop(x86::rcx);
+	bsAsm.pop(x86::rsi);
+	bsAsm.pop(x86::rdi);
+	bsAsm.pop(x86::r8);
+	bsAsm.pop(x86::r13);
+	bsAsm.pop(x86::r15);
+
+	//Restore to game code
+	bsAsm.mov(x86::rax, x86::rcx);
+	bsAsm.sub(x86::rax, x86::r8);
+	Label addrPool = bsAsm.newLabel();
+	bsAsm.jmp(x86::ptr(addrPool));
+	bsAsm.bind(addrPool);
+	bsAsm.embedUInt64(hookRet);
+
+	//Create the bootstrap func
+	void* bs;
+	Error err = runtime.add(&bs, &bsCode);
+	if (err) {
+		::Logger::Debug("AsmJit failed: {}", DebugUtils::errorAsString(err));
+	}
+
+	//Detour
+	/*
+	CodeHolder dCode;
+	dCode.setLogger(&logger);
+	dCode.init(runtime.environment());
+	x86::Assembler dAsm(&dCode);
+	Label lD = dAsm.newLabel();
+	dAsm.jmp(bs);
+	dCode.
+	*/
+
+	//Create detour func (TODO: Write to the game's mem instead)
+	//AsmFunc det;
+	//runtime.add(&det, &dCode);
+	::Logger::Debug("Bootstrapper generated here: {}", bs);
+	//::Logger::Debug("Detour generated here: {}", (void*)det);
+	std::cin.get();
+
+	/*
+	plhPostDecrypt = new PLH::x64Detour(oPostDecrypt, (uint64_t)hkPostDecrypt, &oPostDecrypt);
+	if (!plhPostDecrypt->hook()) {
+		Logger::Print<Logger::FAILURE>("Failed to hook PostDecrypt");
+		return false;
+	}
+	*/
+
+	/*
 	plhDecryptBytes = new PLH::x64Detour(oDecryptBytes, (uint64_t)hkDecryptBytes, &oDecryptBytes);
 	if (!plhDecryptBytes->hook()) {
 		Logger::Print<Logger::FAILURE>("Failed to hook Bin2::DecryptBytes");
 		return false;
 	}
+	*/
 
 	HMODULE hOpenGL = GetModuleHandleA("OPENGL32.dll");
 	if (hOpenGL) {
@@ -211,24 +431,24 @@ bool HookManager::ApplyHooks()
 		if (pSwapBuffers) {
 			plhSwapBuffers = new PLH::x64Detour((uint64_t)pSwapBuffers, (uint64_t)hkSwapBuffers, &oSwapBuffers);
 			if (!plhSwapBuffers->hook()) {
-				Logger::Print<Logger::FAILURE>("Failed to hook wglSwapBuffers");
+				::Logger::Print<::Logger::FAILURE>("Failed to hook wglSwapBuffers");
 				return false;
 			}
 		}
 		else {
-			Logger::Print<Logger::FAILURE>("Couldn't find wglSwapBuffers address");
+			::Logger::Print<::Logger::FAILURE>("Couldn't find wglSwapBuffers address");
 			return false;
 		}
 	}
 	else {
-		Logger::Print<Logger::FAILURE>("OpenGL was not found, but the game relies on it? Couldn't hook wglSwapBuffers");
+		::Logger::Print<::Logger::FAILURE>("OpenGL was not found, but the game relies on it? Couldn't hook wglSwapBuffers");
 		return false;
 	}
 
 	if (config->UnlockTowers()) {
 		plhIsTowerUnlocked = new PLH::x64Detour(oIsTowerUnlocked, (uint64_t)hkIsTowerUnlocked, &oIsTowerUnlocked);
 		if (!plhIsTowerUnlocked->hook()) {
-			Logger::Print<Logger::FAILURE>("Failed to hook Profile::IsTowerUnlocked");
+			::Logger::Print<::Logger::FAILURE>("Failed to hook Profile::IsTowerUnlocked");
 			return false;
 		}
 	}
@@ -236,7 +456,7 @@ bool HookManager::ApplyHooks()
 	if (config->UnlockUpgrades()) {
 		plhIsUpgradeUnlocked = new PLH::x64Detour(oIsUpgradeUnlocked, (uint64_t)hkIsUpgradeUnlocked, &oIsUpgradeUnlocked);
 		if (!plhIsUpgradeUnlocked->hook()) {
-			Logger::Print<Logger::FAILURE>("Failed to hook Profile::IsUpgradeUnlocked");
+			::Logger::Print<::Logger::FAILURE>("Failed to hook Profile::IsUpgradeUnlocked");
 			return false;
 		}
 	}
