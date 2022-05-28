@@ -38,7 +38,6 @@ FetchContent_GetProperties(plh)
 if(NOT plh_POPULATED)
     FetchContent_Populate(plh)
     set(POLYHOOK_BUILD_DLL ON)
-    #set(POLYHOOK_BUILD_SHARED_LIB OFF)
     add_subdirectory(${plh_SOURCE_DIR} ${plh_BINARY_DIR})
 endif()
 
@@ -95,10 +94,23 @@ if(NOT libarchive_POPULATED)
     add_subdirectory(${libarchive_SOURCE_DIR} ${libarchive_BINARY_DIR})
 endif()
 
+#Add ghstl
+FetchContent_Declare(
+    ghstl
+    GIT_REPOSITORY https://github.com/DisabledMallis/ghstl
+    GIT_TAG main
+)
+FetchContent_GetProperties(ghstl)
+if(NOT ghstl_POPULATED)
+    FetchContent_Populate(ghstl)
+    add_subdirectory(${ghstl_SOURCE_DIR} ${ghstl_BINARY_DIR})
+endif()
+
 # Include library include dir
 include_directories("${glfw_SOURCE_DIR}/include/")
 include_directories("${libarchive_SOURCE_DIR}/libarchive")
 include_directories("${ch_SOURCE_DIR}/lib/jsrt/")
+include_directories("${ghstl_SOURCE_DIR}/include/")
 
 # Final output dir for compile files
 set(FINAL_DIR "${CMAKE_CURRENT_LIST_DIR}/build/${CMAKE_BUILD_TYPE}")

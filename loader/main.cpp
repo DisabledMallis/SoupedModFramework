@@ -4,7 +4,6 @@
 #include "hookManager.h"
 #include <polyhook2/Detour/x64Detour.hpp>
 #include <ipc.h>
-#include <SoupSTL.h>
 #include "patcher/patchers/BattleMenuPatcher.h"
 #include "patcher/overrides.h"
 #include <stdjs.h>
