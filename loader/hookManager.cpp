@@ -159,9 +159,10 @@ void PostDecrypt(char* endPtr, size_t size, char* beginPtr) {
 	patchworkMutex.unlock();
 	return;
 }
-void* hkPostDecrypt(char* endPtr, size_t size, char* beginPtr) {
-	PostDecrypt(endPtr, size, beginPtr);
-	return PLH::FnCast(oPostDecrypt, hkPostDecrypt)(endPtr, size, beginPtr);
+void hkPostDecrypt(char* endPtr, size_t size, char* beginPtr) {
+	Logger::Debug("Size: {}", size);
+	//PostDecrypt(endPtr, size, beginPtr);
+	//return;// PLH::FnCast(oPostDecrypt, hkPostDecrypt)(endPtr, size, beginPtr);
 }
 //Derive key
 //?? ?? ?? 71 ?? ?? ?? 33 ?? ?? ?? 0B ?? ?? ?? B5 ?? ?? ?? E5 ?? ?? ?? 23 ?? ?? ?? CF
@@ -351,9 +352,13 @@ bool HookManager::ApplyHooks()
 	bsCode.init(runtime.environment());
 	x86::Assembler bsAsm(&bsCode);
 
+	size_t hookSize = 10;
+	size_t proxySize = 15;
 	//Useful memory locations
+	uint64_t pLoadAsset = Memory::FindSig(Soup::Signatures::SIG_LOAD_ASSET);
+	uint64_t jmpProxy = pLoadAsset - proxySize;
 	uint64_t hookLoc = oPostDecrypt;
-	uint64_t hookRet = oPostDecrypt + 6;
+	uint64_t hookRet = oPostDecrypt + hookSize;
 	Label entryLabel = bsAsm.newLabel();
 	bsAsm.bind(entryLabel);
 
@@ -366,6 +371,7 @@ bool HookManager::ApplyHooks()
 	bsAsm.push(x86::r13);
 	bsAsm.push(x86::r15);
 	//Hook code here (call the callback function)
+	bsAsm.call(hkPostDecrypt);
 
 	//Pop registers for returning to game code
 	bsAsm.pop(x86::rcx);
@@ -379,34 +385,58 @@ bool HookManager::ApplyHooks()
 	//Restore to game code
 	bsAsm.mov(x86::rax, x86::rcx);
 	bsAsm.sub(x86::rax, x86::r8);
-	Label addrPool = bsAsm.newLabel();
-	bsAsm.jmp(x86::ptr(addrPool));
-	bsAsm.bind(addrPool);
+	bsAsm.lea(x86::rdx, x86::ptr(x86::rax, -0x8));
+
+	Label bsAddrPool = bsAsm.newLabel();
+	bsAsm.jmp(x86::ptr(bsAddrPool));
+	bsAsm.bind(bsAddrPool);
 	bsAsm.embedUInt64(hookRet);
 
 	//Create the bootstrap func
-	void* bs;
+	uint64_t bs;
 	Error err = runtime.add(&bs, &bsCode);
 	if (err) {
 		::Logger::Debug("AsmJit failed: {}", DebugUtils::errorAsString(err));
+		return false;
 	}
 
-	//Detour
-	/*
-	CodeHolder dCode;
-	dCode.setLogger(&logger);
-	dCode.init(runtime.environment());
-	x86::Assembler dAsm(&dCode);
-	Label lD = dAsm.newLabel();
-	dAsm.jmp(bs);
-	dCode.
-	*/
+	//Proxy jump
+	CodeHolder pjCode;
+	pjCode.init(runtime.environment(), jmpProxy);
+	x86::Assembler pjAsm(&pjCode);
+	Label pjAddrPool = pjAsm.newLabel();
+	pjAsm.jmp(x86::ptr(pjAddrPool));
+	pjAsm.bind(pjAddrPool);
+	pjAsm.embedUInt64(bs);
 
-	//Create detour func (TODO: Write to the game's mem instead)
-	//AsmFunc det;
-	//runtime.add(&det, &dCode);
-	::Logger::Debug("Bootstrapper generated here: {}", bs);
-	//::Logger::Debug("Detour generated here: {}", (void*)det);
+	//Detour to proxy
+	CodeHolder dCode;
+	dCode.init(runtime.environment(), hookLoc);
+	x86::Assembler dAsm(&dCode);
+	dAsm.jmp(jmpProxy);
+
+	DWORD oldProt;
+	VirtualProtect((LPVOID)hookLoc, hookSize, PAGE_EXECUTE_READWRITE, &oldProt);
+	memset((void*)hookLoc, 0x90, hookSize);
+	VirtualProtect((LPVOID)jmpProxy, proxySize, PAGE_EXECUTE_READWRITE, &oldProt);
+	memset((void*)jmpProxy, 0x90, proxySize);
+
+	for (Section* section : dCode.sections()) {
+		size_t offset = size_t(section->offset());
+		size_t bufferSize = size_t(section->bufferSize());
+		size_t virtualSize = size_t(section->virtualSize());
+		memcpy((void*)(hookLoc + offset), section->data(), bufferSize);
+	}
+
+	for (Section* section : pjCode.sections()) {
+		size_t offset = size_t(section->offset());
+		size_t bufferSize = size_t(section->bufferSize());
+		size_t virtualSize = size_t(section->virtualSize());
+		memcpy((void*)(jmpProxy + offset), section->data(), bufferSize);
+	}
+
+	::Logger::Debug("Bootstrapper generated here: {}", (void*)bs);
+	::Logger::Debug("Detour generated here: {}", (void*)hookLoc);
 	std::cin.get();
 
 	/*
