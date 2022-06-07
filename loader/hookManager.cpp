@@ -162,6 +162,8 @@ void PostDecrypt(char* endPtr, size_t size, char* beginPtr) {
 void hkPostDecrypt(char* endPtr, size_t param_2, char* beginPtr) {
 	size_t size = endPtr - beginPtr;
 	Logger::Debug("Size: {}", size);
+	std::string content = std::string(beginPtr, size-8);
+	Logger::Debug("Content: {}", content);
 	//PostDecrypt(endPtr, size, beginPtr);
 	//return;// PLH::FnCast(oPostDecrypt, hkPostDecrypt)(endPtr, size, beginPtr);
 }
