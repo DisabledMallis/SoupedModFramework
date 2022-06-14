@@ -116,6 +116,12 @@ bool hkFreeConsole() {
 	return false;
 }
 
+static PLH::x64Detour* plhRAIN = nullptr;
+static uint64_t oRAIN;
+bool hkRAIN() {
+	return false;
+}
+
 int initialize() {
 	SetConsoleTitleA("Console");
 	
@@ -144,7 +150,16 @@ int initialize() {
 	}
 	Logger::Debug("WinMain hooked");
 
-	
+	Logger::Debug("Hooking SteamAPI_RestartAppIfNecessary...");
+	HMODULE hSteamAPI = GetModuleHandleA("steam_api64.dll");
+	FARPROC pRAIN = GetProcAddress(hSteamAPI, "SteamAPI_RestartAppIfNecessary");
+	plhRAIN = new PLH::x64Detour((uint64_t)pRAIN, (uint64_t)hkRAIN, &oRAIN);
+	if (!plhRAIN->hook()) {
+		Logger::Print<Logger::FAILURE>("Failed to hook SteamAPI_RestartAppIfNecessary");
+		return false;
+	}
+	Logger::Debug("SteamAPI_RestartAppIfNecessary hooked");
+
 	return 0;
 }
 
