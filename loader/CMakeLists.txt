@@ -27,7 +27,7 @@ target_link_libraries(Loader PRIVATE Common fmt PolyHook_2 SoupSDK glfw opengl32
 add_custom_command(
 	TARGET Loader POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy
-		${CMAKE_BINARY_DIR}/loader/Loader.dll
+		${CMAKE_BINARY_DIR}/loader/${CMAKE_BUILD_TYPE}/Loader.dll
 		${FINAL_DIR}/loaders/Loader.dll
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		${CMAKE_CURRENT_LIST_DIR}/scripts

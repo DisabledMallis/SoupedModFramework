@@ -10,6 +10,6 @@ target_link_libraries(ModExplore PRIVATE ModFS Common)
 add_custom_command(
 	TARGET ModExplore POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy
-		${CMAKE_BINARY_DIR}/modexplore/ModExplore.exe
+		${CMAKE_BINARY_DIR}/modexplore/${CMAKE_BUILD_TYPE}/ModExplore.exe
 		${FINAL_DIR}/ModExplore.exe
 )

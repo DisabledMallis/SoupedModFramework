@@ -8,6 +8,6 @@ target_link_libraries(SoupSDK PRIVATE Common PolyHook_2 fmt)
 add_custom_command(
 	TARGET SoupSDK POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy
-		${CMAKE_BINARY_DIR}/soupsdk/SoupSDK.dll
+		${CMAKE_BINARY_DIR}/soupsdk/${CMAKE_BUILD_TYPE}/SoupSDK.dll
 		${FINAL_DIR}/SoupSDK.dll
 )

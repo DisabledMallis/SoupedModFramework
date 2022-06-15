@@ -1,19 +1,27 @@
-add_custom_target(Launcher ALL
-	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-	COMMAND npm install -g @neutralinojs/neu
-	COMMAND npm install .
-        COMMAND neu update
-	COMMAND neu build --release
+add_executable(Launcher)
+
+set_property(TARGET Launcher PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION "v4.8")
+set_property(TARGET Launcher PROPERTY WIN32_EXECUTABLE TRUE)
+
+target_sources(Launcher PRIVATE
+	"main.cs"
+    "webview.cs"
 )
-add_custom_command(
-	TARGET Launcher POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy
-		${CMAKE_CURRENT_LIST_DIR}/dist/launcher/launcher-win_x64.exe
-		${FINAL_DIR}/Launcher.exe
-	COMMAND ${CMAKE_COMMAND} -E copy
-		${CMAKE_CURRENT_LIST_DIR}/dist/launcher/WebView2Loader.dll
-		${FINAL_DIR}/WebView2Loader.dll
-	COMMAND ${CMAKE_COMMAND} -E copy
-		${CMAKE_CURRENT_LIST_DIR}/dist/launcher/resources.neu
-		${FINAL_DIR}/resources.neu
+
+add_custom_command(TARGET Launcher
+    PRE_BUILD
+    COMMAND dotnet restore ${CMAKE_BINARY_DIR}/launcher/Launcher.csproj -r win-x64
+)
+
+set_property(TARGET Launcher PROPERTY VS_PACKAGE_REFERENCES
+    "Microsoft.Web.WebView2_*"
+)
+
+set_property(TARGET Launcher PROPERTY VS_DOTNET_REFERENCES
+    "Microsoft.CSharp"
+    "System"
+    "System.Core"
+    "System.Data"
+    "System.Drawing"
+    "System.Windows.Forms"
 )
